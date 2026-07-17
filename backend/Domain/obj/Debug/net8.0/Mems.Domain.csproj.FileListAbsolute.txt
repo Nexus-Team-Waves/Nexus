@@ -1,0 +1,12 @@
+D:\Nexus\backend\Domain\bin\Debug\net8.0\Mems.Domain.deps.json
+D:\Nexus\backend\Domain\bin\Debug\net8.0\Mems.Domain.dll
+D:\Nexus\backend\Domain\bin\Debug\net8.0\Mems.Domain.pdb
+D:\Nexus\backend\Domain\obj\Debug\net8.0\Mems.Domain.GeneratedMSBuildEditorConfig.editorconfig
+D:\Nexus\backend\Domain\obj\Debug\net8.0\Mems.Domain.AssemblyInfoInputs.cache
+D:\Nexus\backend\Domain\obj\Debug\net8.0\Mems.Domain.AssemblyInfo.cs
+D:\Nexus\backend\Domain\obj\Debug\net8.0\Mems.Domain.csproj.CoreCompileInputs.cache
+D:\Nexus\backend\Domain\obj\Debug\net8.0\Mems.Domain.sourcelink.json
+D:\Nexus\backend\Domain\obj\Debug\net8.0\Mems.Domain.dll
+D:\Nexus\backend\Domain\obj\Debug\net8.0\refint\Mems.Domain.dll
+D:\Nexus\backend\Domain\obj\Debug\net8.0\Mems.Domain.pdb
+D:\Nexus\backend\Domain\obj\Debug\net8.0\ref\Mems.Domain.dll

@@ -1,0 +1,56 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "Mems.Infrastructure/1.0.0": {
+        "dependencies": {
+          "Mems.Application": "1.0.0",
+          "Mems.Domain": "1.0.0"
+        },
+        "runtime": {
+          "Mems.Infrastructure.dll": {}
+        }
+      },
+      "Mems.Application/1.0.0": {
+        "dependencies": {
+          "Mems.Domain": "1.0.0"
+        },
+        "runtime": {
+          "Mems.Application.dll": {
+            "assemblyVersion": "1.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "Mems.Domain/1.0.0": {
+        "runtime": {
+          "Mems.Domain.dll": {
+            "assemblyVersion": "1.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Mems.Infrastructure/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Mems.Application/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Mems.Domain/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

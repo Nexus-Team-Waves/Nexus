@@ -1,0 +1,16 @@
+D:\Nexus\backend\Application\bin\Debug\net8.0\Mems.Application.deps.json
+D:\Nexus\backend\Application\bin\Debug\net8.0\Mems.Application.dll
+D:\Nexus\backend\Application\bin\Debug\net8.0\Mems.Application.pdb
+D:\Nexus\backend\Application\bin\Debug\net8.0\Mems.Domain.dll
+D:\Nexus\backend\Application\bin\Debug\net8.0\Mems.Domain.pdb
+D:\Nexus\backend\Application\obj\Debug\net8.0\Mems.Application.csproj.AssemblyReference.cache
+D:\Nexus\backend\Application\obj\Debug\net8.0\Mems.Application.GeneratedMSBuildEditorConfig.editorconfig
+D:\Nexus\backend\Application\obj\Debug\net8.0\Mems.Application.AssemblyInfoInputs.cache
+D:\Nexus\backend\Application\obj\Debug\net8.0\Mems.Application.AssemblyInfo.cs
+D:\Nexus\backend\Application\obj\Debug\net8.0\Mems.Application.csproj.CoreCompileInputs.cache
+D:\Nexus\backend\Application\obj\Debug\net8.0\Mems.Application.sourcelink.json
+D:\Nexus\backend\Application\obj\Debug\net8.0\Mems.App.7FD11AA8.Up2Date
+D:\Nexus\backend\Application\obj\Debug\net8.0\Mems.Application.dll
+D:\Nexus\backend\Application\obj\Debug\net8.0\refint\Mems.Application.dll
+D:\Nexus\backend\Application\obj\Debug\net8.0\Mems.Application.pdb
+D:\Nexus\backend\Application\obj\Debug\net8.0\ref\Mems.Application.dll
