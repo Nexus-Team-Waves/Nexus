@@ -1,0 +1,59 @@
+# ---------------------------------------------------------------------------
+# MEMS — Medical Entitlement Management System
+# ---------------------------------------------------------------------------
+
+# --- Secrets (CLAUDE.md §1.2) ----------------------------------------------
+# appsettings.json IS committed: it holds placeholder keys only, so the team
+# knows what to populate. Environment-specific files carry real connection
+# strings / SAP Service Layer credentials and must never be committed.
+appsettings.*.json
+!appsettings.json
+*.secrets.json
+secrets.json
+.env
+.env.*
+!.env.example
+
+# --- .NET -------------------------------------------------------------------
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+*.userprefs
+.vs/
+TestResults/
+*.trx
+*.coverage
+*.nupkg
+artifacts/
+
+# --- Node / React -----------------------------------------------------------
+node_modules/
+dist/
+dist-ssr/
+build/
+.vite/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Editors ----------------------------------------------------------------
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# VS Code: keep shared workspace config, ignore per-developer state.
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# --- Logs / local scratch ---------------------------------------------------
+logs/
+*.log

@@ -41,16 +41,19 @@ A medical-entitlement claim system for employees. Staff submit medical claims; t
 
 ## 4. Repository layout
 
-> TODO(Umer): confirm/adjust once folders are created. Assumed structure below.
+> Scaffolded 2026-07-17. Structure below is real and matches the repo.
 
 ```
-/backend        ASP.NET Core Web API (C#)
-  /Api            controllers / endpoints
-  /Domain         entities, entitlement rules, value objects
-  /Application    services, DTOs, validators, use-cases
-  /Infrastructure EF Core / Dapper, SAP B1 clients (Service Layer + DI-API), repositories
-  /Migrations     DB schema migrations
-/frontend       React + TypeScript PWA
+global.json     pins the .NET SDK to 8.0.x — see §6
+/backend
+  Mems.sln
+  /Api            Mems.Api            — controllers / endpoints (thin)
+  /Domain         Mems.Domain         — entities, entitlement rules, value objects (no deps)
+  /Application    Mems.Application    — services, DTOs, validators, use-cases
+  /Infrastructure Mems.Infrastructure — persistence, SAP B1 clients (ServiceLayer + DiApi), repositories
+  /Tests          Mems.Tests          — xUnit
+  /Migrations     DB schema migrations (tool undecided — see backend/Migrations/README.md)
+/frontend       React + TypeScript PWA (Vite)
   /src
     /features     feature-sliced (claims, approvals, entitlements)
     /components   shared UI
@@ -60,26 +63,47 @@ A medical-entitlement claim system for employees. Staff submit medical claims; t
 /docs           architecture, SAP mapping, entitlement rules, SOPs
 ```
 
+**Project reference graph** (enforces §6 layering — `Domain` depends on nothing):
+
+```
+Api ──► Application ──► Domain
+ └────► Infrastructure ──► Application, Domain
+Tests ──► Api, Application, Domain
+```
+
 ---
 
 ## 5. Build / run commands
 
-> TODO(Umer): fill in real commands once scaffolded. Placeholders:
+> Verified working 2026-07-17.
 
 ```bash
-# Backend
-dotnet restore
-dotnet build
-dotnet run --project backend/Api
-dotnet test
+# --- Backend (from repo root) ---
+dotnet restore backend/Mems.sln
+dotnet build   backend/Mems.sln
+dotnet test    backend/Mems.sln
+dotnet run --project backend/Api --launch-profile https   # https://localhost:7112
 
-# Frontend
+# Swagger UI:   https://localhost:7112/swagger
+# Health check: https://localhost:7112/api/health
+
+# --- Frontend (from /frontend) ---
 npm install
-npm run dev
-npm run build
-npm run lint
-npm run test
+npm run dev       # http://localhost:5173 — proxies /api to https://localhost:7112
+npm run build     # tsc -b && vite build (also emits the service worker)
+npm run preview   # serve the production build — REQUIRED to test PWA/offline behaviour
+npm run lint      # oxlint
 ```
+
+**Run both:** start the API first, then `npm run dev`. The app shell shows API reachability,
+so a red "MEMS API — unreachable" card means the backend isn't up.
+
+**First-run notes:**
+- Requires **.NET SDK 8.0.x** (`winget install Microsoft.DotNet.SDK.8`). `global.json` pins it,
+  so a machine with only .NET 9 will fail fast with a clear error rather than silently building
+  on the wrong SDK.
+- If the browser rejects the API's dev certificate: `dotnet dev-certs https --trust`.
+- There is **no frontend test runner yet** — adding one (Vitest) is a dependency decision for Umer (§13).
 
 When you add a new command, update this section so the next session knows it.
 
