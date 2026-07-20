@@ -6025,11 +6025,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\Nexus\\backend\\Tests\\Mems.Tests.csproj",
+      "projectUniqueName": "D:\\nexus\\backend\\Tests\\Mems.Tests.csproj",
       "projectName": "Mems.Tests",
-      "projectPath": "D:\\Nexus\\backend\\Tests\\Mems.Tests.csproj",
+      "projectPath": "D:\\nexus\\backend\\Tests\\Mems.Tests.csproj",
       "packagesPath": "C:\\Users\\Faheem\\.nuget\\packages\\",
-      "outputPath": "D:\\Nexus\\backend\\Tests\\obj\\",
+      "outputPath": "D:\\nexus\\backend\\Tests\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -6050,14 +6050,14 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "D:\\Nexus\\backend\\Api\\Mems.Api.csproj": {
-              "projectPath": "D:\\Nexus\\backend\\Api\\Mems.Api.csproj"
+            "D:\\nexus\\backend\\Api\\Mems.Api.csproj": {
+              "projectPath": "D:\\nexus\\backend\\Api\\Mems.Api.csproj"
             },
-            "D:\\Nexus\\backend\\Application\\Mems.Application.csproj": {
-              "projectPath": "D:\\Nexus\\backend\\Application\\Mems.Application.csproj"
+            "D:\\nexus\\backend\\Application\\Mems.Application.csproj": {
+              "projectPath": "D:\\nexus\\backend\\Application\\Mems.Application.csproj"
             },
-            "D:\\Nexus\\backend\\Domain\\Mems.Domain.csproj": {
-              "projectPath": "D:\\Nexus\\backend\\Domain\\Mems.Domain.csproj"
+            "D:\\nexus\\backend\\Domain\\Mems.Domain.csproj": {
+              "projectPath": "D:\\nexus\\backend\\Domain\\Mems.Domain.csproj"
             }
           }
         }

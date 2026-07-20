@@ -58,7 +58,7 @@ export default defineConfig({
       // forwards to the .NET API (port from backend/Api/Properties/launchSettings.json).
       // Production points at a real host via VITE_API_BASE_URL instead.
       '/api': {
-        target: 'https://localhost:7112',
+        target: 'http://localhost:5046',
         changeOrigin: true,
         // The .NET dev HTTPS certificate is self-signed; accept it in dev only.
         secure: false,

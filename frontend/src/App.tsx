@@ -5,6 +5,10 @@ import { useOnlineStatus } from './hooks/useOnlineStatus'
 import { db } from './offline/db'
 import './App.css'
 
+//import  StatusCard  from './components/StatusCardComponent'
+
+import StatusGrid from './components/StatusGrid'
+
 /**
  * MEMS application shell — scaffold.
  *
@@ -57,7 +61,24 @@ function App() {
         </p>
       </header>
 
-      <section className="status-grid">
+
+<StatusGrid
+  isOnline={isOnline}
+  queuedCount={queuedCount}
+  health={health}
+  healthError={healthError}
+/>
+
+
+      {/* <section className="status-grid">
+
+        <StatusCard 
+        label ="User Status Card"
+        value="running"
+        state="ok"
+        detail="some detail"
+        />
+
         <StatusCard
           label="PWA shell"
           value="running"
@@ -72,18 +93,7 @@ function App() {
           detail={isOnline ? 'Browser reports connectivity' : 'Claims will queue locally'}
         />
 
-        <StatusCard
-          label="MEMS API"
-          value={health ? health.status : healthError ? 'unreachable' : 'checking…'}
-          state={health ? 'ok' : healthError ? 'error' : 'pending'}
-          detail={
-            health
-              ? `${health.service} · ${health.environment}`
-              : healthError
-                ? 'Start the API: dotnet run --project backend/Api'
-                : 'Contacting /api/health'
-          }
-        />
+        
 
         <StatusCard
           label="Offline queue"
@@ -91,7 +101,7 @@ function App() {
           state="ok"
           detail="Dexie over IndexedDB"
         />
-      </section>
+      </section> */}
 
       <footer>
         <p>
@@ -102,22 +112,23 @@ function App() {
   )
 }
 
-type CardState = 'ok' | 'warn' | 'error' | 'pending'
 
-/** Small presentational card. Kept in this file until a second screen needs it. */
-function StatusCard(props: {
-  label: string
-  value: string
-  state: CardState
-  detail: string
-}) {
-  return (
-    <article className={`status-card status-card--${props.state}`}>
-      <h2>{props.label}</h2>
-      <p className="status-value">{props.value}</p>
-      <p className="status-detail">{props.detail}</p>
-    </article>
-  )
-}
+// type CardState = 'ok' | 'warn' | 'error' | 'pending'
+
+// /** Small presentational card. Kept in this file until a second screen needs it. */
+// function StatusCard(props: {
+//   label: string
+//   value: string
+//   state: CardState
+//   detail: string
+// }) {
+//   return (
+//     <article className={`status-card status-card--${props.state}`}>
+//       <h2>{props.label}</h2>
+//       <p className="status-value">{props.value}</p>
+//       <p className="status-detail">{props.detail}</p>
+//     </article>
+//   )
+// }
 
 export default App
