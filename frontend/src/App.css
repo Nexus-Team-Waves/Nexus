@@ -1,0 +1,101 @@
+/* MEMS shell styles — scaffold.
+   Plain CSS on purpose: no UI framework has been chosen yet, and adding one is a
+   decision for Umer (CLAUDE.md §13 — no heavyweight dependencies without asking). */
+
+.mems-shell {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 2.5rem 1.25rem;
+  text-align: left;
+}
+
+.mems-shell header {
+  border-bottom: 1px solid var(--mems-border);
+  padding-bottom: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.mems-shell h1 {
+  margin: 0;
+  font-size: 2.5rem;
+  letter-spacing: -0.02em;
+  color: var(--mems-accent);
+}
+
+.subtitle {
+  margin: 0.25rem 0 0;
+  font-size: 1.05rem;
+  color: var(--mems-text-muted);
+}
+
+.scaffold-note {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  color: var(--mems-text-muted);
+  font-style: italic;
+}
+
+.status-grid {
+  display: grid;
+  /* auto-fit + minmax gives a responsive grid with no media queries: cards reflow
+     from 4-up on desktop down to 1-up on a phone. Frontline users are on mobile. */
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 1rem;
+}
+
+.status-card {
+  border: 1px solid var(--mems-border);
+  border-left: 4px solid var(--mems-border);
+  border-radius: 8px;
+  padding: 1rem 1.1rem;
+  background: var(--mems-card-bg);
+}
+
+.status-card h2 {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--mems-text-muted);
+}
+
+.status-value {
+  margin: 0.4rem 0 0.2rem;
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+
+.status-detail {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--mems-text-muted);
+}
+
+/* State is carried by the left border AND the value colour, never colour alone —
+   a red/green-only signal is invisible to colour-blind users. */
+.status-card--ok { border-left-color: var(--mems-ok); }
+.status-card--ok .status-value { color: var(--mems-ok); }
+
+.status-card--warn { border-left-color: var(--mems-warn); }
+.status-card--warn .status-value { color: var(--mems-warn); }
+
+.status-card--error { border-left-color: var(--mems-error); }
+.status-card--error .status-value { color: var(--mems-error); }
+
+.status-card--pending { border-left-color: var(--mems-border); }
+.status-card--pending .status-value { color: var(--mems-text-muted); }
+
+.mems-shell footer {
+  margin-top: 2.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--mems-border);
+  font-size: 0.85rem;
+  color: var(--mems-text-muted);
+}
+
+.mems-shell footer code {
+  background: var(--mems-code-bg);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+}

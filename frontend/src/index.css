@@ -1,0 +1,69 @@
+/* MEMS global styles and design tokens.
+   Light and dark are both supported — frontline staff use their own devices and
+   we do not control their system theme. */
+
+:root {
+  --mems-text: #3f4451;
+  --mems-text-muted: #6b7280;
+  --mems-heading: #0b1220;
+  --mems-bg: #ffffff;
+  --mems-card-bg: #ffffff;
+  --mems-border: #e3e5ea;
+  --mems-code-bg: #f2f4f7;
+
+  --mems-accent: #0f766e;
+  --mems-ok: #0f766e;
+  --mems-warn: #b45309;
+  --mems-error: #b91c1c;
+
+  --mems-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mems-mono: ui-monospace, Consolas, monospace;
+
+  font: 16px/1.5 var(--mems-sans);
+  color-scheme: light dark;
+  color: var(--mems-text);
+  background: var(--mems-bg);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --mems-text: #c7ccd6;
+    --mems-text-muted: #949cab;
+    --mems-heading: #f3f4f6;
+    --mems-bg: #14161b;
+    --mems-card-bg: #1a1d24;
+    --mems-border: #2c313b;
+    --mems-code-bg: #22262f;
+
+    --mems-accent: #2dd4bf;
+    --mems-ok: #2dd4bf;
+    --mems-warn: #fbbf24;
+    --mems-error: #f87171;
+  }
+}
+
+body {
+  margin: 0;
+  min-height: 100svh;
+}
+
+h1,
+h2 {
+  font-family: var(--mems-sans);
+  color: var(--mems-heading);
+}
+
+p {
+  margin: 0;
+}
+
+code {
+  font-family: var(--mems-mono);
+  font-size: 0.85em;
+  background: var(--mems-code-bg);
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+}
