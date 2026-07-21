@@ -1,134 +1,139 @@
-import { useEffect, useState } from 'react'
-import { useLiveQuery } from 'dexie-react-hooks'
-import { getHealth, type HealthResponse } from './api/client'
-import { useOnlineStatus } from './hooks/useOnlineStatus'
-import { db } from './offline/db'
+import { useCallback, useEffect, useState } from 'react'
+import { useAuth } from './auth/useAuth'
+import SignIn from './auth/SignIn'
+import OtpVerify from './auth/OtpVerify'
+import BottomNav, { type Screen } from './components/BottomNav'
+import HomeScreen from './features/home/HomeScreen'
+import SubmitScreen from './features/claims/SubmitScreen'
+import ClaimsScreen from './features/claims/ClaimsScreen'
+import ApprovalQueueScreen from './features/approvals/ApprovalQueueScreen'
+import ClaimReviewScreen from './features/approvals/ClaimReviewScreen'
+import { getApprovalQueue, getEntitlement, listMyClaims } from './api/client'
+import type { ApiUser, ClaimDto, EntitlementDto, Role } from './types/api'
 import './App.css'
 
-//import  StatusCard  from './components/StatusCardComponent'
-
-import StatusGrid from './components/StatusGrid'
+const ROLE_LABEL: Record<Role, string> = {
+  Employee: 'Employee',
+  LineManager: 'Line Manager',
+  AdminHr: 'Admin/HR',
+  Finance: 'Finance',
+  TopLevel: 'Top-Level Approver',
+}
 
 /**
- * MEMS application shell — scaffold.
- *
- * This is intentionally a status page, not a feature. It proves the three pieces of the
- * architecture are wired together and talking:
- *   1. the React PWA renders,
- *   2. it can reach the .NET API (and degrades honestly when it cannot),
- *   3. the Dexie/IndexedDB offline queue is live and readable.
- *
- * Real screens go under src/features/{claims,approvals,entitlements}.
+ * MEMS shell. Not signed in → the email-OTP flow. Signed in → the employee app (Home/Submit/Claims)
+ * or, for an approver role, the approvals app (Queue/Review). All data is live from the API.
  */
 function App() {
-  const isOnline = useOnlineStatus()
-  const [health, setHealth] = useState<HealthResponse | null>(null)
-  const [healthError, setHealthError] = useState<string | null>(null)
+  const auth = useAuth()
 
-  // useLiveQuery re-renders automatically whenever the underlying Dexie table changes —
-  // no manual subscription or polling. Returns undefined on the first render, before the
-  // IndexedDB read resolves, which is why the count below guards against that.
-  const queuedCount = useLiveQuery(() => db.claims.count())
+  if (auth.loading) {
+    return <div className="app-frame"><p className="centered-note">Loading…</p></div>
+  }
+  if (auth.status === 'signed-out') {
+    return <div className="app-frame"><SignIn onRequestCode={auth.requestCode} error={auth.error} /></div>
+  }
+  if (auth.status === 'awaiting-code') {
+    return (
+      <div className="app-frame">
+        <OtpVerify email={auth.email ?? ''} onVerify={auth.verify} onResend={auth.resend} onBack={auth.signOut} />
+      </div>
+    )
+  }
 
-  useEffect(() => {
-    let cancelled = false
-
-    getHealth()
-      .then((result) => {
-        if (cancelled) return
-        setHealth(result)
-        setHealthError(null)
-      })
-      .catch((error: unknown) => {
-        if (cancelled) return
-        setHealth(null)
-        setHealthError(error instanceof Error ? error.message : 'Unknown error')
-      })
-
-    // Guard against setting state after unmount (e.g. React 18+ StrictMode double-invoke).
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
+  const user = auth.user!
   return (
-    <main className="mems-shell">
-      <header>
-        <h1>MEMS</h1>
-        <p className="subtitle">Medical Entitlement Management System</p>
-        <p className="scaffold-note">
-          Scaffold build — architecture wired, business logic not yet implemented.
-        </p>
-      </header>
-
-
-<StatusGrid
-  isOnline={isOnline}
-  queuedCount={queuedCount}
-  health={health}
-  healthError={healthError}
-/>
-
-
-      {/* <section className="status-grid">
-
-        <StatusCard 
-        label ="User Status Card"
-        value="running"
-        state="ok"
-        detail="some detail"
-        />
-
-        <StatusCard
-          label="PWA shell"
-          value="running"
-          state="ok"
-          detail="React + TypeScript, offline-capable"
-        />
-
-        <StatusCard
-          label="Network"
-          value={isOnline ? 'online' : 'offline'}
-          state={isOnline ? 'ok' : 'warn'}
-          detail={isOnline ? 'Browser reports connectivity' : 'Claims will queue locally'}
-        />
-
-        
-
-        <StatusCard
-          label="Offline queue"
-          value={queuedCount === undefined ? 'reading…' : `${queuedCount} claim(s)`}
-          state="ok"
-          detail="Dexie over IndexedDB"
-        />
-      </section> */}
-
-      <footer>
-        <p>
-          Next: confirm entitlement rules and SAP mapping — see <code>/docs</code>.
-        </p>
-      </footer>
-    </main>
+    <div className="app-frame">
+      {user.role === 'Employee'
+        ? <EmployeeApp onSignOut={auth.signOut} />
+        : <ApproverApp user={user} onSignOut={auth.signOut} />}
+    </div>
   )
 }
 
+/** Employee experience: dashboard, submit/edit, claims list. */
+function EmployeeApp({ onSignOut }: { onSignOut: () => void }) {
+  const [screen, setScreen] = useState<Screen>('home')
+  const [editing, setEditing] = useState<ClaimDto | null>(null)
+  const [entitlement, setEntitlement] = useState<EntitlementDto | null>(null)
+  const [claims, setClaims] = useState<ClaimDto[]>([])
+  const [loading, setLoading] = useState(true)
 
-// type CardState = 'ok' | 'warn' | 'error' | 'pending'
+  const refresh = useCallback(async () => {
+    const [ent, list] = await Promise.all([getEntitlement(), listMyClaims()])
+    setEntitlement(ent)
+    setClaims(list)
+    setLoading(false)
+  }, [])
 
-// /** Small presentational card. Kept in this file until a second screen needs it. */
-// function StatusCard(props: {
-//   label: string
-//   value: string
-//   state: CardState
-//   detail: string
-// }) {
-//   return (
-//     <article className={`status-card status-card--${props.state}`}>
-//       <h2>{props.label}</h2>
-//       <p className="status-value">{props.value}</p>
-//       <p className="status-detail">{props.detail}</p>
-//     </article>
-//   )
-// }
+  useEffect(() => { void refresh() }, [refresh])
+
+  if (loading || !entitlement) return <p className="centered-note">Loading…</p>
+
+  const onNavigate = (next: Screen) => {
+    if (next === 'submit') setEditing(null)
+    setScreen(next)
+  }
+  const afterSubmit = async () => { setEditing(null); await refresh(); setScreen('claims') }
+
+  return (
+    <>
+      <div className="app-scroll">
+        {screen === 'home' && (
+          <HomeScreen
+            entitlement={entitlement}
+            recent={claims.slice(0, 3)}
+            onNavigate={(s) => (s === 'submit' ? onNavigate('submit') : setScreen('claims'))}
+            onOpenClaim={() => setScreen('claims')}
+            onSignOut={onSignOut}
+          />
+        )}
+        {screen === 'submit' && (
+          <SubmitScreen dependants={entitlement.dependants} editing={editing} onDone={afterSubmit} />
+        )}
+        {screen === 'claims' && (
+          <ClaimsScreen claims={claims} onEdit={(c) => { setEditing(c); setScreen('submit') }} />
+        )}
+      </div>
+      <BottomNav active={screen} onNavigate={onNavigate} />
+    </>
+  )
+}
+
+/** Approver experience: the role's queue and the per-claim review screen. */
+function ApproverApp({ user, onSignOut }: { user: ApiUser; onSignOut: () => void }) {
+  const [queue, setQueue] = useState<ClaimDto[]>([])
+  const [reviewing, setReviewing] = useState<ClaimDto | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  const refresh = useCallback(async () => {
+    setQueue(await getApprovalQueue())
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { void refresh() }, [refresh])
+
+  if (loading) return <p className="centered-note">Loading…</p>
+
+  return (
+    <div className="app-scroll">
+      {reviewing ? (
+        <ClaimReviewScreen
+          claim={reviewing}
+          onBack={() => setReviewing(null)}
+          onUpdated={async () => { setReviewing(null); await refresh() }}
+        />
+      ) : (
+        <ApprovalQueueScreen
+          roleLabel={ROLE_LABEL[user.role]}
+          displayName={user.displayName}
+          claims={queue}
+          onOpen={(c) => setReviewing(c)}
+          onSignOut={onSignOut}
+        />
+      )}
+    </div>
+  )
+}
 
 export default App

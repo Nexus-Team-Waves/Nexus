@@ -115,3 +115,13 @@ D:\Nexus\backend\Tests\obj\Debug\net8.0\Mems.Tests.pdb
 D:\Nexus\backend\Tests\obj\Debug\net8.0\Mems.Tests.genruntimeconfig.cache
 D:\Nexus\backend\Tests\obj\Debug\net8.0\ref\Mems.Tests.dll
 D:\Nexus\backend\Tests\bin\Debug\net8.0\FluentValidation.dll
+D:\Nexus\backend\Tests\bin\Debug\net8.0\Mems.Api.exe
+D:\Nexus\backend\Tests\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.dll
+D:\Nexus\backend\Tests\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.Abstractions.dll
+D:\Nexus\backend\Tests\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.InMemory.dll
+D:\Nexus\backend\Tests\bin\Debug\net8.0\Microsoft.Extensions.Caching.Memory.dll
+D:\Nexus\backend\Tests\bin\Debug\net8.0\Microsoft.Extensions.DependencyInjection.dll
+D:\Nexus\backend\Tests\bin\Debug\net8.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll
+D:\Nexus\backend\Tests\bin\Debug\net8.0\Microsoft.Extensions.Logging.dll
+D:\Nexus\backend\Tests\bin\Debug\net8.0\Microsoft.Extensions.Logging.Abstractions.dll
+D:\Nexus\backend\Tests\bin\Debug\net8.0\Microsoft.Extensions.Options.dll

@@ -37,3 +37,12 @@ D:\Nexus\backend\Api\obj\Debug\net8.0\Mems.Api.pdb
 D:\Nexus\backend\Api\obj\Debug\net8.0\Mems.Api.genruntimeconfig.cache
 D:\Nexus\backend\Api\obj\Debug\net8.0\ref\Mems.Api.dll
 D:\Nexus\backend\Api\bin\Debug\net8.0\FluentValidation.dll
+D:\Nexus\backend\Api\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.dll
+D:\Nexus\backend\Api\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.Abstractions.dll
+D:\Nexus\backend\Api\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.InMemory.dll
+D:\Nexus\backend\Api\bin\Debug\net8.0\Microsoft.Extensions.Caching.Memory.dll
+D:\Nexus\backend\Api\bin\Debug\net8.0\Microsoft.Extensions.DependencyInjection.dll
+D:\Nexus\backend\Api\bin\Debug\net8.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll
+D:\Nexus\backend\Api\bin\Debug\net8.0\Microsoft.Extensions.Logging.dll
+D:\Nexus\backend\Api\bin\Debug\net8.0\Microsoft.Extensions.Logging.Abstractions.dll
+D:\Nexus\backend\Api\bin\Debug\net8.0\Microsoft.Extensions.Options.dll

@@ -1,69 +1,79 @@
-/* MEMS global styles and design tokens.
-   Light and dark are both supported — frontline staff use their own devices and
-   we do not control their system theme. */
+/* MEMS design tokens + base.
+   Mobile-first, blue theme — matches the approved product mockups. Frontline staff are on
+   phones, so the app is a single centred column (a "phone frame" on wider screens). */
 
 :root {
-  --mems-text: #3f4451;
-  --mems-text-muted: #6b7280;
-  --mems-heading: #0b1220;
-  --mems-bg: #ffffff;
-  --mems-card-bg: #ffffff;
-  --mems-border: #e3e5ea;
-  --mems-code-bg: #f2f4f7;
+  /* Brand */
+  --brand: #1e40af;         /* primary actions */
+  --brand-strong: #1b3a9c;  /* hover/active */
+  --brand-ink: #ffffff;     /* text on brand */
+  --brand-soft: #e8effe;    /* logo tile, progress track, subtle fills */
 
-  --mems-accent: #0f766e;
-  --mems-ok: #0f766e;
-  --mems-warn: #b45309;
-  --mems-error: #b91c1c;
+  /* Ink & surfaces */
+  --ink: #0f172a;
+  --ink-2: #334155;
+  --muted: #64748b;
+  --page: #eef1f5;          /* area behind the app column */
+  --bg: #ffffff;            /* app column background */
+  --surface: #f8fafc;       /* inset cards (e.g. balance) */
+  --card: #ffffff;
+  --border: #e6e8ec;
+  --border-strong: #d5d9e0;
 
-  --mems-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mems-mono: ui-monospace, Consolas, monospace;
+  /* Status */
+  --ok-bg: #dcfce7;   --ok-ink: #166534;
+  --review-bg: #fef3c7; --review-ink: #92400e;
+  --danger-bg: #fee2e2; --danger-ink: #991b1b;
+  --info-bg: #e0edff; --info-ink: #1e40af;
 
-  font: 16px/1.5 var(--mems-sans);
-  color-scheme: light dark;
-  color: var(--mems-text);
-  background: var(--mems-bg);
+  /* Shape */
+  --radius: 14px;
+  --radius-sm: 10px;
+  --radius-pill: 999px;
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04);
+
+  --sans: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--ink);
+  color-scheme: light;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --mems-text: #c7ccd6;
-    --mems-text-muted: #949cab;
-    --mems-heading: #f3f4f6;
-    --mems-bg: #14161b;
-    --mems-card-bg: #1a1d24;
-    --mems-border: #2c313b;
-    --mems-code-bg: #22262f;
-
-    --mems-accent: #2dd4bf;
-    --mems-ok: #2dd4bf;
-    --mems-warn: #fbbf24;
-    --mems-error: #f87171;
-  }
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
   min-height: 100svh;
+  background: var(--page);
 }
 
-h1,
-h2 {
-  font-family: var(--mems-sans);
-  color: var(--mems-heading);
+h1, h2, h3 {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 p {
   margin: 0;
 }
 
-code {
-  font-family: var(--mems-mono);
-  font-size: 0.85em;
-  background: var(--mems-code-bg);
-  border-radius: 4px;
-  padding: 0.1rem 0.35rem;
+button {
+  font-family: inherit;
+}
+
+/* Respect users who ask for reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
 }

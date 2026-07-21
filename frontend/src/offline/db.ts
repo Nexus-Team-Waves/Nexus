@@ -14,13 +14,14 @@
  * flaky connection silently produces duplicate claims, which in a financial system means
  * double-posting to SAP. This is the single most important invariant in the offline path.
  *
- * NOTE FOR REVIEWERS: this file defines the queue envelope only. The claim *body*
- * (amount, category, dependant, receipts…) is intentionally not modelled yet — the
- * entitlement rules that determine those fields are still open questions in
- * /docs/entitlement-rules.md, and guessing them here would bake in wrong assumptions.
+ * NOTE FOR REVIEWERS: this file defines the queue envelope. The claim *body* is now modelled
+ * as `ClaimPayload` (src/types/claim.ts), which mirrors the backend SubmitClaimRequest DTO —
+ * the entitlement rules that determine those fields were agreed on 2026-07-21
+ * (/docs/entitlement-rules.md).
  */
 
 import Dexie, { type EntityTable } from 'dexie'
+import type { ClaimPayload } from '../types/claim'
 
 /**
  * Lifecycle of a queued claim:
@@ -34,14 +35,6 @@ import Dexie, { type EntityTable } from 'dexie'
  */
 export type ClaimSyncStatus = 'pending' | 'syncing' | 'synced' | 'conflict' | 'failed'
 
-/**
- * Placeholder for the claim payload. Deliberately `unknown` rather than `any`:
- * `unknown` forces callers to narrow the type before use, so this cannot silently
- * become a hole in our type safety. (CLAUDE.md §9 bans `any` without a written reason.)
- * Replace with a real `ClaimPayload` interface once entitlement rules are agreed.
- */
-export type ClaimPayloadPlaceholder = unknown
-
 export interface QueuedClaim {
   /** Client-generated UUID. The idempotency key — see file header. Never reassigned. */
   clientId: string
@@ -51,8 +44,8 @@ export interface QueuedClaim {
 
   status: ClaimSyncStatus
 
-  /** The claim itself. See ClaimPayloadPlaceholder above. */
-  payload: ClaimPayloadPlaceholder
+  /** The claim itself — mirrors the backend SubmitClaimRequest DTO. */
+  payload: ClaimPayload
 
   /** ISO-8601 UTC. When the user pressed submit — NOT when it reached the server. */
   createdAt: string
@@ -107,7 +100,7 @@ export const db = new MemsDatabase()
  *
  * @returns the clientId, which is the claim's stable identity from here on.
  */
-export async function enqueueClaim(payload: ClaimPayloadPlaceholder): Promise<string> {
+export async function enqueueClaim(payload: ClaimPayload): Promise<string> {
   const clientId = crypto.randomUUID()
 
   await db.claims.add({

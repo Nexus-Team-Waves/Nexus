@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Mems.Infrastructure")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d58edf9938b7d5d1b0087eb2336377b0e9d6261a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b34be3ee7d9edfe5691dd14484b4913cceca2235")]
 [assembly: System.Reflection.AssemblyProductAttribute("Mems.Infrastructure")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Mems.Infrastructure")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
