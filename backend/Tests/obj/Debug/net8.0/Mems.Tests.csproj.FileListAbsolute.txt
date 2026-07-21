@@ -3,7 +3,6 @@ D:\Nexus\backend\Tests\bin\Debug\net8.0\testhost.dll
 D:\Nexus\backend\Tests\bin\Debug\net8.0\Mems.Api.deps.json
 D:\Nexus\backend\Tests\bin\Debug\net8.0\Mems.Api.runtimeconfig.json
 D:\Nexus\backend\Tests\bin\Debug\net8.0\appsettings.json
-D:\Nexus\backend\Tests\bin\Debug\net8.0\Mems.Api.exe
 D:\Nexus\backend\Tests\bin\Debug\net8.0\testhost.exe
 D:\Nexus\backend\Tests\bin\Debug\net8.0\xunit.runner.visualstudio.dotnetcore.testadapter.dll
 D:\Nexus\backend\Tests\bin\Debug\net8.0\xunit.runner.reporters.netcoreapp10.dll
@@ -115,3 +114,4 @@ D:\Nexus\backend\Tests\obj\Debug\net8.0\refint\Mems.Tests.dll
 D:\Nexus\backend\Tests\obj\Debug\net8.0\Mems.Tests.pdb
 D:\Nexus\backend\Tests\obj\Debug\net8.0\Mems.Tests.genruntimeconfig.cache
 D:\Nexus\backend\Tests\obj\Debug\net8.0\ref\Mems.Tests.dll
+D:\Nexus\backend\Tests\bin\Debug\net8.0\FluentValidation.dll

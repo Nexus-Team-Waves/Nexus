@@ -1,43 +1,253 @@
 # Entitlement Rules
 
-> Status: **UNANSWERED — no rules implemented.**
->
-> CLAUDE.md §1.6 / §12: do not guess entitlement amounts or approval flows.
-> Correctness of entitlement calculation is the project's stated #1 goal, so every
-> rule here must come from policy, not inference.
+> Status: **mostly decided.** Source: Waves Medical Policy (QR/HR/POL-002, dated 01-06-2017,
+> confirmed current as of July 2026), plus a detailed business-rules questionnaire answered
+> 2026-07-21. A handful of small implementation details remain open — see bottom.
+> Per CLAUDE.md §1.6, nothing below is inferred; every figure traces to the policy document
+> or an explicit decision from Umer.
 
-## Open questions
+## Scope
 
-### Entitlement definition
-- [ ] What determines an employee's entitlement — grade/band, tenure, department, contract type?
-- [ ] Is entitlement an annual cap, per-claim cap, per-dependant cap, or a combination?
-- [ ] What is the entitlement period? Calendar year, fiscal year, or employment anniversary?
-- [ ] Do unused amounts carry over? If so, capped at what, and expiring when?
+- MEMS covers **Grade M and Grade E employees only.**
+- Worker & Staff up to Grade S are covered by Social Security, not company reimbursement —
+  **out of scope for MEMS.**
+- Eligibility is sourced from a maintained **entitlement lookup** (grade, join date, dependant
+  info), fed by the **Attendance/Payroll DB — confirmed authoritative for employee master
+  data.** Salary figures specifically follow the separate rules below (§ Salary & entitlement
+  base), since M grade and non-M grades are sourced differently.
+- M1–M3 / M4+: **permanent employees only.**
+- E1–E5: **includes probation/contract staff** (extends beyond the literal 2017 policy
+  wording, which only states "permanent" for the M-grade section — recorded as an explicit
+  decision, not a policy quote).
 
-### Coverage
-- [ ] Which claim categories exist (consultation, medicine, hospitalisation, dental, optical, …)?
-- [ ] Are there per-category sub-limits?
-- [ ] Are dependants covered? If so, who counts as a dependant, and is their pool shared or separate?
-- [ ] Co-pay / deductible — percentage or fixed? Applied before or after the cap?
+## Salary & entitlement base
 
-### Lifecycle edge cases
-- [ ] Mid-year joiners — pro-rated or full entitlement?
-- [ ] Leavers — are in-flight claims honoured? What happens to submitted-but-unapproved claims?
-- [ ] Grade change mid-period — recalculate, or entitlement locked at period start?
-- [ ] Backdated claims — how old can a claim be and still be valid?
+**The system never calculates entitlement from payroll's monthly salary feed directly.**
+Entitlement is always: `Basic Monthly Salary × Entitlement Factor = Annual Entitlement`.
 
-### Approval flow
-- [ ] Who approves, and in what sequence (line manager → HR → Finance)?
-- [ ] Are there value thresholds that change the approval path?
-- [ ] Can an approver reject partially (approve PKR X of a PKR Y claim)?
-- [ ] What happens when an approver is on leave — delegation? auto-escalation after N days?
+| Grade | Entitlement factor |
+|---|---|
+| M4 & above | 1× Basic Monthly Salary |
+| M1 – M3 | 1.5× Basic Monthly Salary |
+| E1 – E5 | 2× Basic Monthly Salary |
 
-### Money
-- [ ] Currency — PKR only, or multi-currency? (Storage is `DECIMAL(18,4)` per §8 regardless.)
-- [ ] Rounding rule at the cap boundary.
+*(This resolves the earlier monthly-vs-annual ambiguity: the base is explicitly the*
+*employee's **monthly** Basic salary, multiplied by the factor to produce the **annual***
+*entitlement.)*
+
+### M grade — Entitled Salary mechanism
+
+- M grade employees don't have their Basic Monthly Salary uploaded directly. Instead, the
+  **Application Administrator manually enters an "Entitled Salary"** — a single annual figure,
+  valid for the whole policy year.
+- `Basic Monthly Salary = Entitled Salary × (2 / 3)`, then multiplied by the grade's factor
+  above to get the annual entitlement.
+- **Confidentiality — enforced at both API and UI layers:**
+  - Entitled Salary is **encrypted at rest.**
+  - Viewable only by: **the employee (claimant)** and **their Line Manager and Finance
+    approvers.**
+  - **The Admin/HR approval stage must never be able to view it** — confirmed this is the
+    same "Admin Department" restriction, i.e. the Admin/HR step in the approval workflow.
+  - **Design consequence:** the Admin/HR approval screen must let that stage decide on a
+    claim (approve / reduce / reject) using computed values only — remaining balance,
+    whether the claim exceeds the cap — **without exposing the Entitled Salary or the
+    derived Basic Monthly Salary figure.** Line Manager and Finance screens can show the
+    real number; Admin/HR's screen cannot.
+
+### Non-M grade — Excel-based salary management
+
+- Basic Monthly Salary is **uploaded via Excel** and used as-is (no 2/3 conversion — that
+  conversion is an M-grade-only mechanism). *(Assumption — Section 3 of the questionnaire
+  reuses the term "Entitled Salary" generically for increments across all grades; I'm reading
+  that as loose terminology rather than a rule that non-M grades also route through the 2/3
+  conversion. Flag if that's wrong.)*
+- UI needed: upload screen, view-uploaded-salary-history screen, validation for duplicate
+  uploads and invalid employee codes.
+
+### Salary increments (all grades)
+
+- An employee can receive **multiple increments in the same policy year.**
+- Each increment: employee, new salary figure, effective date.
+- On an increment: recalculate Basic Monthly Salary (via the 2/3 conversion if M grade, or
+  directly if not) → recalculate annual entitlement → **prorate the remaining entitlement**
+  from the effective date to year-end, using the same daily-basis method as joiners:
+  `(days remaining ÷ 365) × new annual entitlement`.
+- **Entitlement already consumed before the increment is preserved** — the revised
+  (higher or lower) entitlement applies only to the remaining balance, not retroactively.
+- UI needed: manual increment-entry screen, Excel upload for increments, increment history,
+  effective-date validation, support for multiple increments per employee per year.
+
+This is a **third proration scenario**, alongside:
+1. Mid-year joiner — `(days employed ÷ 365) × annual entitlement`
+2. Mid-year grade change — recalculates immediately at the new grade (netting mechanism vs.
+   already-used amount still to work out at build time)
+3. Mid-year salary increment — as above
+
+## Claim structure
+
+A claim is a header with one or more line items:
+
+- **Claim (header):** employee, submission date, overall status (derived from its lines),
+  total claimed, total approved.
+- **Claim line (repeatable, one or more per claim):**
+  - **For:** self, or a specific dependant. Lines in the same claim can be for different
+    dependants.
+  - **Category:** OPD, hospitalization, maternity, dental, or doctor/Hakim/homeopath
+    consultation. Lines in the same claim can be different categories.
+  - **Claimed amount** and **approved amount** (null until a stage acts on this line).
+  - **Line status:** Pending → Approved / Partially approved / Rejected.
+  - **Rejection reason:** required text when a line is rejected.
+  - **Receipt attachment:** photo (device camera) or uploaded file.
+  - **Days-elapsed indicator:** show days between expense date and submission date (see
+    Claim submission timing below) — informational, not a validation gate.
+- **Claim-level totals:** `Total claimed` = sum of claimed amounts. `Total approved` = sum of
+  approved amounts (Pending lines contribute nothing yet).
+- **Overall claim status** (derived): any line Rejected → **Action needed**; all lines
+  Approved → **Approved**; any line Pending (none rejected) → **In review**; otherwise
+  → **Partially approved**.
+
+## Coverage
+
+- **Categories:** OPD, hospitalization, maternity, limited dental, doctor/Hakim/homeopath
+  consultation.
+- **Explicitly excluded:** spectacles/contact lenses (except cataract-surgery lenses), and a
+  long exclusion list — cosmetics, supplements, energy drinks, toiletries, dietary items,
+  medical equipment, dentures, cosmetic dental work.
+- **Sub-limits:**
+  | Item | M1–M3 | M4+ | E1–E5 |
+  |---|---|---|---|
+  | Room rate cap | Rs 6,000/day | Rs 8,000/day | Rs 3,000/day |
+  | Consultation fee cap | **Configurable — see below** | **Configurable — see below** | **Configurable — see below** |
+  | Medicine purchase limit | 15 days' supply (1 month for chronic conditions) — all grades | | |
+  | Prescription-exempt threshold | Bills ≤ Rs 1,000 don't require a prescription — all grades | | |
+- **Consultation fee limits are now config-driven, not hardcoded, for every grade** —
+  including E1–E5, whose Rs 200/day/patient becomes the initial configured value rather than
+  a fixed constant. Admin screen defines: Employee Grade, Consultation Fee Limit, Effective
+  Date, Active/Inactive status. The approval screen shows the configured limit, the claimed
+  amount, and whether the claim exceeds it — approvers can still approve over-limit claims
+  per their workflow permissions (soft limit, not a hard block).
+- **Dependants:** spouse + children ≤19 (≤23 if unmarried full-time student). Shared pool
+  with the employee, not separate.
+- **Co-pay:** none — 100% reimbursement of actual expense up to the cap.
+- Sub-limits apply **per claim line**, based on that line's category.
+
+## Claim submission timing
+
+- **No automatic rejection based on submission date.** The system displays the number of
+  days elapsed between expense date and submission date to the approver; the approver
+  decides whether to approve or reject a late submission. This replaces the earlier
+  15-days-vs-following-month conflict in the source policy — it's now informational only,
+  not a validation gate.
+
+## Approval flow
+
+- **Standard claim:** sequential — **Line Manager → Admin/HR → Finance.**
+- **Approval is per line, not per claim.** At each stage, the approver evaluates every line
+  individually: approve in full, reduce (partial approval), or reject with a reason.
+- **Extra approval for large claims:** no fixed Rs threshold. The **threshold amount is
+  admin-configurable** (read from config at runtime, changeable without a code deploy).
+  Claims exceeding it require an additional stage: **Top-Level Approver** (also referred to
+  as "Final Approval" — confirmed these are the same role/step) after Finance.
+  *(Still open: whether the threshold is evaluated per line or per claim total.)*
+- **Approver on leave:** pending claims are **manually reassigned by admin** — no
+  auto-escalation logic needed.
+
+### Medical Advance from Next Year's Entitlement
+
+Replaces/expands the original policy's brief "emergency advance" clause:
+
+- If a claim is approved (by the Top-Level Approver) for more than the employee's **available
+  entitlement for the current year**, the excess is recorded as an **Advance Against Next
+  Year's Medical Entitlement** — a distinct, tracked amount linked to the next policy year.
+- At the start of the next policy year, the employee's available entitlement is
+  **automatically reduced** by the outstanding advance.
+- Employee and all approvers must be able to see, clearly: **Current Year's Entitlement**,
+  **Advance Consumed from Next Year**, and **Remaining Balance After Deduction.**
+- **Audit trail required:** original approval, advance amount, the year borrowed from, and
+  date of adjustment.
+- **No carry-forward of unused entitlement** — the only thing that crosses a policy-year
+  boundary is an approved advance.
+
+**Worked example:**
+| | Amount |
+|---|---|
+| 2026 entitlement | Rs 300,000 |
+| Employee's approved claims in 2026 | Rs 340,000 |
+| Advance approved from 2027 | Rs 40,000 |
+| 2027 entitlement | Rs 300,000 |
+| **Available balance at start of 2027** | **Rs 260,000** |
+
+*(Minor open point, not blocking: the original 2017 policy required ED approval **with the
+consent of HOD** for this kind of advance. The new rules describe approval by the "highest-
+level approver" without restating the HOD-consent step. Working assumption: HOD consent is
+still required alongside Top-Level Approver sign-off, since nothing said to drop it — flag
+if that's wrong.)*
+
+## Editing rules
+
+- **Editable while Pending:** an employee can edit a claim before the Line Manager has acted
+  on it.
+- **Editable if any line is rejected:** the employee can edit the claim to address the
+  rejection reason (rejections most often happen at the Admin/HR stage) and resubmit.
+- **Resubmission restarts the entire claim at Line Manager** — confirmed: this applies to
+  every line in the claim, **including lines that were already approved at Admin/HR or
+  Finance**, not just the rejected line. The whole hierarchy runs again:
+  `Employee → Line Manager → Admin/HR → Finance → (Top-Level Approver if over threshold)`.
+- **Locked once approved with no rejections:** if no line has been rejected, the claim is
+  locked for editing once the Line Manager has approved any of its lines.
+- **Audit requirement:** the approval history of previous (pre-resubmission) submissions must
+  remain available for audit — resubmission doesn't erase prior history, it adds a new cycle.
+
+## Money
+
+- **Currency:** PKR only.
+- **Storage:** `DECIMAL(18,4)` per CLAUDE.md §8 — this also comfortably handles the M-grade
+  2/3 conversion, which can produce non-round figures.
+- **Rounding at cap boundary:** round to nearest.
+- **M-grade Entitled Salary is encrypted at rest** — see Salary & entitlement base above.
+  Worth mirroring this requirement in CLAUDE.md §10 (Security) since it's a data-protection
+  rule, not just an entitlement rule — say if you'd like that file updated too.
+
+## Open — still small implementation details, not blocking
+
+- [ ] **Extra-approval / advance threshold:** evaluated per line or per claim total?
+- [ ] **Non-M-grade increments:** confirm they set Basic Monthly Salary directly, with no 2/3
+      conversion (see assumption flagged above).
+- [ ] **HOD consent on advances:** confirm still required alongside Top-Level Approver
+      sign-off (see assumption flagged above).
+- [ ] **Mid-year grade change netting:** how amount already used under the old grade nets
+      against the new entitlement (build-time detail, not blocking).
 
 ## Notes
 
-- Nothing in `Mems.Domain` implements entitlement logic yet. The scaffold intentionally
-  contains no placeholder amounts, because a placeholder number in a medical entitlement
-  system is a defect waiting to be shipped.
+- Source: Waves Medical Policy, QR/HR/POL-002, 01-06-2017, confirmed current as of July 2026,
+  plus the business-rules questionnaire answered 2026-07-21.
+- `Mems.Domain` entitlement logic can be built against everything above marked decided. The
+  four small open items above should block only their specific sub-feature, not the rest of
+  the claim/entitlement engine.
+
+### Implementation status (2026-07-21, updated for the questionnaire)
+
+Decided rules are implemented in **`Mems.Domain`** + **`Mems.Application`** (52 passing tests).
+Only decided rules are encoded; open items are left as explicit, un-guessed gaps.
+
+- **Salary base** — resolved: annual entitlement = `Basic Monthly Salary × factor`
+  (`EntitlementCalculator`). M-grade `Entitled Salary → Basic Monthly = ×2/3` in `SalaryPolicy`;
+  non-M uses the uploaded monthly figure as-is.
+- **Proration** — one daily-basis helper (`÷365`) serves both joiners and salary increments
+  (`EntitlementCalculator.ProratedEntitlementForIncrement`). Grade-change netting still open.
+- **Advance against next year** — `EntitlementBalance.Allocate` splits an approved amount into
+  current-year vs. advance (matches the worked example); cross-year carry/adjustment is a
+  persistence concern, not yet built.
+- **Consultation-fee cap** — now config-driven & soft for *all* grades: removed the hardcoded
+  constant; reads through `IConsultationFeeLimitProvider` (adapter + admin screen not yet built).
+- **Claims** — `Claim`/`ClaimLine` with per-line approve/partial/reject, derived overall status,
+  expense date + days-elapsed data, and the **updated** editing rule (a rejection re-opens the
+  whole claim for edit-and-resubmit, even alongside approved lines).
+- **Application** — submit DTOs + FluentValidation (incl. expense-date sanity, not a lateness
+  gate), `ClaimAssembler`, `EntitlementService` over ports whose adapters live in Infrastructure.
+
+**Not yet built (need approver-side workflow / Infrastructure):** the Top-Level Approver stage
+and advance flow, increment/advance ledgers, M-grade Entitled-Salary encryption + the Admin/HR
+"never see the salary" screen restriction, and enforcement (vs. display) of sub-limits and
+dependant-coverage at approval time. **Still open in policy:** the four items listed above.

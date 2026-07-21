@@ -1,8 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "+GjRXF9IPZo=",
+  "dgSpecHash": "GPYnbg05Nmw=",
   "success": true,
   "projectFilePath": "D:\\Nexus\\backend\\Infrastructure\\Mems.Infrastructure.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "C:\\Users\\Faheem\\.nuget\\packages\\fluentvalidation\\11.9.2\\fluentvalidation.11.9.2.nupkg.sha512"
+  ],
   "logs": []
 }

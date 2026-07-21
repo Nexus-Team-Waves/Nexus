@@ -36,3 +36,4 @@ D:\Nexus\backend\Api\obj\Debug\net8.0\refint\Mems.Api.dll
 D:\Nexus\backend\Api\obj\Debug\net8.0\Mems.Api.pdb
 D:\Nexus\backend\Api\obj\Debug\net8.0\Mems.Api.genruntimeconfig.cache
 D:\Nexus\backend\Api\obj\Debug\net8.0\ref\Mems.Api.dll
+D:\Nexus\backend\Api\bin\Debug\net8.0\FluentValidation.dll

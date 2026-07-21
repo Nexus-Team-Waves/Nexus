@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Mems.Domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+342c37a435a821638a5c7b95df6701f388c5429d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d58edf9938b7d5d1b0087eb2336377b0e9d6261a")]
 [assembly: System.Reflection.AssemblyProductAttribute("Mems.Domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Mems.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

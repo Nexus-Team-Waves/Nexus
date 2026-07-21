@@ -1,10 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "wfLqqZH3Oco=",
+  "dgSpecHash": "HQiHlWmit+A=",
   "success": true,
-  "projectFilePath": "D:\\nexus\\backend\\Tests\\Mems.Tests.csproj",
+  "projectFilePath": "D:\\Nexus\\backend\\Tests\\Mems.Tests.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Faheem\\.nuget\\packages\\coverlet.collector\\6.0.0\\coverlet.collector.6.0.0.nupkg.sha512",
+    "C:\\Users\\Faheem\\.nuget\\packages\\fluentvalidation\\11.9.2\\fluentvalidation.11.9.2.nupkg.sha512",
     "C:\\Users\\Faheem\\.nuget\\packages\\microsoft.codecoverage\\17.8.0\\microsoft.codecoverage.17.8.0.nupkg.sha512",
     "C:\\Users\\Faheem\\.nuget\\packages\\microsoft.extensions.apidescription.server\\6.0.5\\microsoft.extensions.apidescription.server.6.0.5.nupkg.sha512",
     "C:\\Users\\Faheem\\.nuget\\packages\\microsoft.net.test.sdk\\17.8.0\\microsoft.net.test.sdk.17.8.0.nupkg.sha512",

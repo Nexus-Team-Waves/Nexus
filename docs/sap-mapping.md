@@ -1,51 +1,35 @@
-# MEMS → SAP B1 Mapping
+# MEMS ↔ SAP B1 Relationship
 
-> Status: **UNANSWERED — do not implement posting until this document is filled in.**
->
-> CLAUDE.md §1.6: *"When unsure about business rules, entitlement logic, or SAP mapping — stop and ask."*
-> This file is deliberately empty of guesses. Every `?` below is a decision needed from Umer / Finance.
+> Status: **Decided — no live SAP integration.** This document previously tracked open
+> questions for an automated posting design (SAP object type, GL accounts, idempotency UDF).
+> That design was scrapped in favour of manual posting. Retained for history; see CLAUDE.md
+> §7 for the current rule.
 
-## Target: SAP B1 10.00 FP2102, SQL Server 2019, on-prem
+## What actually happens
 
-## 1. What object does an approved claim become?
+1. A claim reaches **Finance-approved** status inside MEMS (after Line Manager → Admin/HR →
+   Finance, and any extra approval for claims above the value threshold — see
+   `docs/entitlement-rules.md`).
+2. **Finance re-enters the claim into SAP B1 manually**, using their own judgement on SAP
+   object type, GL accounts, and posting mechanics. MEMS has no opinion on any of this and
+   no code touches SAP.
+3. Finance returns to MEMS and marks the claim **Posted**, entering the **SAP reference
+   number** (DocEntry/DocNum or equivalent) against it.
+4. MEMS stores that reference number as the audit trail. A claim cannot be marked Posted
+   without one.
 
-| MEMS concept | SAP B1 object | Service Layer endpoint | Decided? |
-|---|---|---|---|
-| Approved medical claim | ? — Journal Entry? A/P Invoice? Outgoing Payment? Purchase Request? | ? | ❌ |
-| Claim reversal / rejection after posting | ? — Credit Memo? Reversing JE? | ? | ❌ |
-| Employee | ? — Business Partner? Employee master (`OHEM`)? | ? | ❌ |
+## What MEMS does NOT do
 
-**Why this matters:** the object choice drives the whole posting module. A Journal Entry
-(`/JournalEntries`) and an A/P Invoice (`/PurchaseInvoices`) have completely different
-payloads, approval implications, and reversal semantics.
+- No Service Layer (REST) client.
+- No DI-API client.
+- No GL account codes anywhere in MEMS — Finance's own SAP setup owns that entirely.
+- No idempotent-posting logic — there's nothing being posted, so there's nothing to
+  double-post. (Claim submission idempotency, via the client-generated UUID, is unrelated
+  and still applies — see CLAUDE.md §9.)
 
-## 2. GL accounts
+## If this changes later
 
-**No account codes are to appear in source.** Once decided, they live in configuration
-(`appsettings.json`, git-ignored overrides per environment) and are referenced by name.
-
-| Purpose | GL account | Decided? |
-|---|---|---|
-| Medical expense (debit) | ? | ❌ |
-| Employee payable / clearing (credit) | ? | ❌ |
-| Cost centre / dimension per employee's department | ? | ❌ |
-
-## 3. Posting identity & idempotency
-
-- Client-generated claim UUID is the idempotency key end-to-end.
-- Where is it stored on the SAP document so a retry can detect a prior post?
-  - Candidate: a UDF (e.g. `U_MEMS_ClaimId`) on the target object. **Needs creating in SAP — approved?** ❌
-- MEMS stores the returned `DocEntry` / `DocNum` against the claim and checks it before re-posting.
-
-## 4. Numbering & series
-
-- Which SAP document series should MEMS post into? ? ❌
-- Does Finance require a dedicated series so MEMS postings are separable in reporting? ? ❌
-
-## 5. Open questions
-
-- [ ] Which SAP object represents an approved claim? *(blocks all posting work)*
-- [ ] GL accounts + cost-centre/dimension rules.
-- [ ] Is a `U_MEMS_ClaimId` UDF acceptable, or must idempotency be tracked MEMS-side only?
-- [ ] Posting timing — immediately on final approval, or batched (e.g. nightly / with payroll)?
-- [ ] Who is the SAP Service Layer service account, and what are its minimum permissions?
+If a future phase decides to add live SAP integration, that's a new architectural decision,
+not a resumption of the old design in this file's git history. Revisit CLAUDE.md §4 and §7,
+and treat the object-type/GL-account/idempotency questions as open again from scratch —
+SAP B1 configuration may have moved on by then.
