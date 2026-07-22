@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { CameraIcon, PlusIcon, UploadIcon } from '../../components/icons'
 import { CLAIM_CATEGORIES, formatRs } from '../../types/domain'
 import { ApiError, editClaim, submitClaim } from '../../api/client'
+import { uuid } from '../../utils/uuid'
 import type { ClaimDto, DependantDto, SubmitClaimLine, SubmitClaimRequest } from '../../types/api'
 
 /**
@@ -18,7 +19,6 @@ interface DraftItem {
 }
 
 const today = (): string => new Date().toISOString().slice(0, 10)
-const uuid = (): string => crypto.randomUUID()
 
 function blankItem(): DraftItem {
   return { key: uuid(), beneficiary: 'Self', category: 'Opd', amount: '', receipt: '' }

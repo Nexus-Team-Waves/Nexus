@@ -57,3 +57,9 @@ Thumbs.db
 # --- Logs / local scratch ---------------------------------------------------
 logs/
 *.log
+
+# deploy build output
+publish/
+backend/Api/wwwroot/
+backend/Api/App_Data/
+frontend/dist/

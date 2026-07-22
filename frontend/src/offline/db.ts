@@ -22,6 +22,7 @@
 
 import Dexie, { type EntityTable } from 'dexie'
 import type { ClaimPayload } from '../types/claim'
+import { uuid } from '../utils/uuid'
 
 /**
  * Lifecycle of a queued claim:
@@ -101,7 +102,7 @@ export const db = new MemsDatabase()
  * @returns the clientId, which is the claim's stable identity from here on.
  */
 export async function enqueueClaim(payload: ClaimPayload): Promise<string> {
-  const clientId = crypto.randomUUID()
+  const clientId = uuid()
 
   await db.claims.add({
     clientId,

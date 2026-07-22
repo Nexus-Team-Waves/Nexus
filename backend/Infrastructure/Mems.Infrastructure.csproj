@@ -6,10 +6,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- DEMO persistence. EF Core InMemory keeps the whole approval workflow live for a running
-         demo with no external SQL Server. Production swaps this for Microsoft.EntityFrameworkCore.SqlServer
-         (SQL Server 2019, CLAUDE.md §3) — the DbContext and repositories are provider-agnostic. -->
-    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.11" />
+    <!-- DEMO persistence. EF Core SQLite gives the hosted demo a durable, single-file database that
+         survives IIS app-pool recycles with zero external DB setup. Production swaps this for
+         Microsoft.EntityFrameworkCore.SqlServer (SQL Server 2019, CLAUDE.md §3) — the DbContext and
+         repositories are provider-agnostic; only the Program.cs registration and migrations change. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.11" />
   </ItemGroup>
 
   <PropertyGroup>

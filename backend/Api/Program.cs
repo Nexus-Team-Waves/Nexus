@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using FluentValidation;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Mems.Api.Middleware;
 using Mems.Application.Auth;
@@ -20,8 +21,13 @@ builder.Services
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// DEMO persistence: EF Core InMemory. Production swaps to SQL Server 2019 (CLAUDE.md §3).
-builder.Services.AddDbContext<MemsDbContext>(o => o.UseInMemoryDatabase("mems-demo"));
+// DEMO persistence: a single-file SQLite database under App_Data (durable across app-pool
+// recycles). Production swaps to SQL Server 2019 (CLAUDE.md §3) — change the registration below to
+// UseSqlServer(connectionString) and use migrations instead of EnsureCreated().
+var dataDir = Path.Combine(builder.Environment.ContentRootPath, "App_Data");
+Directory.CreateDirectory(dataDir);
+var dbPath = Path.Combine(dataDir, "mems-demo.db");
+builder.Services.AddDbContext<MemsDbContext>(o => o.UseSqlite($"Data Source={dbPath}"));
 
 // Approval tuning (Top-Level threshold) from configuration, bound to a plain singleton so the
 // Application layer needs no Options package.
@@ -46,16 +52,14 @@ builder.Services.AddSingleton<IEmployeeEntitlementProfileProvider, DemoEmployeeP
 builder.Services.AddScoped<IEntitlementLedger, ClaimEntitlementLedger>();
 builder.Services.AddScoped<EntitlementService>();
 
-// CORS. With the Vite dev proxy the browser calls are same-origin, but a direct dev origin is
-// allowed too. Origins come from config; a dev default keeps the demo working out of the box.
+// CORS is only needed if the SPA is served from a DIFFERENT origin than the API. In this build the
+// API serves the SPA itself (same origin), so this is a no-op unless you split them. Origins come
+// from config; a dev default keeps `npm run dev` working out of the box.
 const string FrontendCorsPolicy = "MemsFrontend";
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
 if (allowedOrigins is null || allowedOrigins.Length == 0)
 {
-    allowedOrigins = new[]
-    {
-        "http://localhost:5173", "http://localhost:5174", "http://localhost:5180",
-    };
+    allowedOrigins = new[] { "http://localhost:5173", "http://localhost:5174", "http://localhost:5180" };
 }
 builder.Services.AddCors(options => options.AddPolicy(FrontendCorsPolicy, policy => policy
     .WithOrigins(allowedOrigins)
@@ -65,10 +69,13 @@ builder.Services.AddCors(options => options.AddPolicy(FrontendCorsPolicy, policy
 
 var app = builder.Build();
 
-// Seed demo data into the fresh InMemory database.
+// Create the database (if absent) and seed demo data. Seeding is skipped when data already exists,
+// so restarts/recycles keep whatever was submitted during the demo.
 using (var scope = app.Services.CreateScope())
 {
-    DemoSeed.Seed(scope.ServiceProvider.GetRequiredService<MemsDbContext>());
+    var db = scope.ServiceProvider.GetRequiredService<MemsDbContext>();
+    db.Database.EnsureCreated();
+    DemoSeed.Seed(db);
 }
 
 // --- Pipeline --------------------------------------------------------------
@@ -78,17 +85,20 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-    // No HTTPS redirect in development: the Vite proxy talks plain HTTP to :5046, and a redirect
-    // to :7112 would break it. Production terminates TLS in front (CLAUDE.md §10).
 }
-else
-{
-    app.UseHttpsRedirection();
-}
+
+// Serve the built SPA (wwwroot). ".webmanifest" needs an explicit MIME type for the PWA manifest.
+var contentTypes = new FileExtensionContentTypeProvider();
+contentTypes.Mappings[".webmanifest"] = "application/manifest+json";
+app.UseDefaultFiles();
+app.UseStaticFiles(new StaticFileOptions { ContentTypeProvider = contentTypes });
 
 app.UseCors(FrontendCorsPolicy);
 app.UseMiddleware<CurrentUserMiddleware>();
 
 app.MapControllers();
+
+// Any non-API, non-file route (client-side navigation) falls back to the SPA shell.
+app.MapFallbackToFile("index.html");
 
 app.Run();
