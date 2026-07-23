@@ -56,6 +56,22 @@ public sealed class SubmitClaimLineValidator : AbstractValidator<SubmitClaimLine
         RuleFor(l => l.BeneficiaryKind)
             .IsInEnum().WithMessage("Unknown beneficiary kind.");
 
+        RuleFor(l => l.ReceiptReference)
+            .NotEmpty().WithMessage("Each claim line must include a receipt attachment.");
+
+        RuleFor(l => l.ReceiptIds)
+            .Cascade(CascadeMode.Stop) // report the first receipt problem only
+            .NotNull().WithMessage("Each claim line must include at least one uploaded receipt image.")
+            .Must(ids => ids is { Count: >= 1 and <= 5 })
+                .WithMessage("Each claim line needs 1 to 5 uploaded receipt images.")
+            .Must(ids => ids!.All(id => id != Guid.Empty))
+                .WithMessage("Each claim line must include valid uploaded receipt images.")
+            .Must(ids => ids!.Distinct().Count() == ids!.Count)
+                .WithMessage("A claim line lists the same receipt image twice.");
+
+        RuleFor(l => l.Comment)
+            .MaximumLength(500).WithMessage("A line note must be 500 characters or fewer.");
+
         // When the line is for a dependant, it must identify which one and how they are related.
         When(l => l.BeneficiaryKind == BeneficiaryKind.Dependant, () =>
         {

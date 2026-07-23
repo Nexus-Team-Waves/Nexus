@@ -6,6 +6,7 @@ public static class ClaimMapper
     public static ClaimOverallStatus OverallStatus(ClaimRecord c)
     {
         if (c.Posted) return ClaimOverallStatus.Posted;
+        if (c.Stage == ApprovalStage.Closed) return ClaimOverallStatus.Rejected;
         if (c.Stage == ApprovalStage.ReturnedToEmployee) return ClaimOverallStatus.ActionNeeded;
         if (c.Stage == ApprovalStage.Completed)
         {
@@ -31,12 +32,25 @@ public static class ClaimMapper
 
     public static ClaimDto ToDto(ClaimRecord c)
     {
+        var eventsByLine = c.LineEvents
+            .OrderBy(e => e.At)
+            .GroupBy(e => e.LineId)
+            .ToDictionary(
+                g => g.Key,
+                g => (IReadOnlyList<ClaimLineEventDto>)g.Select(e => new ClaimLineEventDto(
+                    ApprovalStagePolicy.StageLabel(e.Stage), e.Action, e.ActorRole, e.ActorName,
+                    e.Amount, e.Reason, e.Comment, e.At)).ToList());
+
         var lines = c.Lines
             .OrderBy(l => l.ExpenseDate)
             .Select(l => new ClaimLineDto(
                 l.Id, l.BeneficiaryKind, l.DependantId, l.DependantRelationship, l.Category,
                 l.ExpenseDate, l.ClaimedAmount, l.CurrentAmount, l.ApprovedAmount,
-                l.Status.ToString(), l.RejectionReason, l.ReceiptReference))
+                l.Status.ToString(), l.RejectionReason, l.ReceiptReference, l.ReceiptIds,
+                // Locked = decided in an earlier round and never re-opened (chain-active lines
+                // are always reset to Pending when a stage advances).
+                l.Status is LineDecisionStatus.Approved or LineDecisionStatus.Reduced,
+                eventsByLine.GetValueOrDefault(l.Id) ?? Array.Empty<ClaimLineEventDto>()))
             .ToList();
 
         var history = c.History

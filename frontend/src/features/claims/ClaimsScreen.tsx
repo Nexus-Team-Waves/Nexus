@@ -1,4 +1,5 @@
 import StatusPill from '../../components/StatusPill'
+import LineTimeline from '../../components/LineTimeline'
 import { claimPrimaryLabel, formatRs, shortCategory } from '../../types/domain'
 import type { ClaimDto } from '../../types/api'
 
@@ -41,12 +42,24 @@ export default function ClaimsScreen({
 
               <ul className="claim-line-list">
                 {claim.lines.map((l) => (
-                  <li key={l.lineId}>
-                    <span>
-                      {l.beneficiaryKind === 'Self' ? 'Self' : 'Dependant'} · {shortCategory(l.category)}
-                      {l.status === 'Rejected' && l.rejectionReason ? ` — ${l.rejectionReason}` : ''}
-                    </span>
-                    <span>{formatRs(l.claimedAmount)}</span>
+                  <li key={l.lineId} className="claim-line-item">
+                    <div className="claim-line-row">
+                      <span>
+                        {l.beneficiaryKind === 'Self' ? 'Self' : 'Dependant'} · {shortCategory(l.category)}
+                        {l.status === 'Rejected' && l.rejectionReason ? ` — ${l.rejectionReason}` : ''}
+                      </span>
+                      <span className="claim-line-amounts">
+                        {/* A reduced line shows what changed: claimed → approved. */}
+                        {l.status === 'Reduced' && l.approvedAmount != null
+                          ? <>
+                              <s>{formatRs(l.claimedAmount)}</s> {formatRs(l.approvedAmount)}
+                            </>
+                          : formatRs(l.claimedAmount)}
+                        {' '}
+                        <StatusPill status={l.status} />
+                      </span>
+                    </div>
+                    <LineTimeline events={l.events} />
                   </li>
                 ))}
               </ul>

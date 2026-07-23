@@ -12,21 +12,17 @@ export default defineConfig({
       // must never be pinned to a stale build holding outdated entitlement logic.
       registerType: 'autoUpdate',
 
-      workbox: {
-        // Precache the app shell only. The shell is what makes offline claim entry work:
-        // the UI loads with no network, and claims queue locally in IndexedDB via Dexie.
+      // Hand-written worker (src/sw.ts) so it can handle Web Push for approver notifications.
+      // IMPORTANT: under injectManifest a `workbox: {...}` block here would be silently
+      // IGNORED — the precache/navigation/no-api-cache guarantees the old generateSW config
+      // provided are reproduced INSIDE src/sw.ts. Keep them in sync with CLAUDE.md §9.
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
+      injectManifest: {
+        // Precache the app shell only (offline claim entry: UI loads with no network,
+        // claims queue locally in IndexedDB via Dexie).
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
-
-        // CRITICAL (CLAUDE.md §9): the service worker must never serve /api from cache.
-        // Entitlement balances and approval status must always be fresh — a cached balance
-        // would let someone submit against an entitlement they have already spent.
-        // There is deliberately NO runtimeCaching entry for /api.
-        navigateFallback: 'index.html',
-        navigateFallbackDenylist: [/^\/api/],
-
-        // Workbox revisions every precached asset by content hash, so the cache is
-        // versioned per build and stale entries are purged on activation (§9).
-        cleanupOutdatedCaches: true,
       },
 
       manifest: {

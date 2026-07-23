@@ -17,7 +17,7 @@ public sealed class ClaimsController(ICurrentUser current, ClaimWorkflowService 
         if (u?.EmployeeId is null) return Unauthorized();
 
         // Trust the authenticated identity, not the body, for the owning employee.
-        var claim = await workflow.SubmitAsync(u.EmployeeId, request with { EmployeeId = u.EmployeeId });
+        var claim = await workflow.SubmitAsync(u, request with { EmployeeId = u.EmployeeId });
         return Ok(ClaimMapper.ToDto(claim));
     }
 
@@ -47,7 +47,7 @@ public sealed class ClaimsController(ICurrentUser current, ClaimWorkflowService 
     {
         var u = current.User;
         if (u?.EmployeeId is null) return Unauthorized();
-        var claim = await workflow.EditAsync(id, u.EmployeeId, request with { ClaimId = id, EmployeeId = u.EmployeeId });
+        var claim = await workflow.EditAsync(id, u, request with { ClaimId = id, EmployeeId = u.EmployeeId });
         return Ok(ClaimMapper.ToDto(claim));
     }
 }

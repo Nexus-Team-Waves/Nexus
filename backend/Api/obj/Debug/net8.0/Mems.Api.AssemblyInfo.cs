@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Mems.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9820eda50310870707cbe7285653e6a215dda93d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d97a16718559312f7255e971c9ad80f18b811be4")]
 [assembly: System.Reflection.AssemblyProductAttribute("Mems.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Mems.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

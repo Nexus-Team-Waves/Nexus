@@ -32,7 +32,8 @@ The OTP code is not emailed — **any 6 digits** work in the demo.
 ## The approval hierarchy
 
 A claim moves through a sequential chain; each stage decides **every line** individually
-(approve in full / reduce the amount / reject with a reason):
+(approve in full / reduce the amount / reject with a reason — except the Line Manager,
+who cannot reduce):
 
 ```
 Employee submits
@@ -48,6 +49,26 @@ Line Manager → Admin/HR → Finance ─┬─(approved total ≤ Rs 25,000)→
 
 - **Per-line decisions.** A stage can approve, reduce, or reject each line; a reduction carries
   forward as the amount the next stage sees.
+- **Line Manager cannot reduce** (decision 2026-07-23): the HOD/Line Manager stage approves in
+  full or rejects with a reason; the Reduce option first appears at Admin/HR. Enforced
+  server-side (403) and hidden in the Line Manager's UI.
+- **Admin/HR can escalate**: a checkbox on the Admin/HR review forwards the claim **directly to
+  the Top-Level Approver, skipping Finance review** (Finance still posts). Applies per round.
+- **Finance is two grade-routed authorities** (config `Approval:FinanceMGradeEmail` /
+  `FinanceOtherEmail`): sign in as **mapproval@waves.com.pk** for M-grade employees' claims
+  (Ayesha) or **otherapproval@waves.com.pk** for others (Khalid, Grade E3). Each sees only its
+  own review + posting queue. The old `finance@` account is retired.
+- **Resubmit keeps approvals**: on a returned claim only the rejected items are editable
+  (approved items show locked); approvers then decide only the resubmitted items.
+- **Per-line timeline & comments**: every line shows "Changes & comments" — who approved,
+  reduced (with amounts), or rejected (with reason) at each stage, plus optional notes from the
+  employee and approvers.
+- **Notifications**: approvers get Web Push (works with the browser closed — see the demo step
+  below); everyone gets the in-app bell + toasts (30-second poll).
+- **Receipts.** Every claim line carries an uploaded receipt image (JPEG/PNG ≤ 5 MB). Each
+  approver stage can view the image inline and download a **per-line PDF** (line details +
+  image). Lines seeded/submitted before image upload show "Receipt image not stored (legacy
+  claim)" and still yield a details-only PDF.
 - **Value threshold.** Claims whose approved total exceeds the configurable threshold
   (`Approval:TopLevelThreshold`, default **Rs 25,000**) require the Top-Level Approver after Finance.
 - **Rejection** sends the claim back to the employee; editing & resubmitting restarts at the Line
@@ -61,9 +82,12 @@ Line Manager → Admin/HR → Finance ─┬─(approved total ≤ Rs 25,000)→
 
 1. **Employee** (`ayesha@`): show the dashboard (Rs 34,500 remaining of Rs 50,000) and the claims
    list — one claim is already Posted with its SAP reference and full history. Submit a new claim.
-2. **Line Manager** (`manager@`): open the queued claim, approve/reduce a line, submit → it leaves
+2. **Line Manager** (`manager@`): open the queued claim — view the receipt image, download the
+   per-line PDF, note there is **no Reduce button** at this stage — approve, submit → it leaves
    your queue.
-3. **Admin/HR** (`hr@`) then **Finance** (`finance@`): approve down the chain.
+3. **Admin/HR** (`hr@`): approve (can also reduce) — optionally tick "Forward directly to the
+   Top-Level Approver" to skip Finance review. Then **Finance** (`mapproval@` for Ayesha's
+   claims / `otherapproval@` for Khalid's): approve.
 4. **Finance**: the completed claim now appears "To post" — enter a SAP reference and mark it Posted.
 5. Back as the **Employee**: the claim now shows **Posted to SAP** with the reference and the
    complete approval history.
@@ -75,10 +99,22 @@ production replacement:
 
 | Demo | Production |
 |---|---|
-| **EF Core InMemory** database (resets on API restart) | SQL Server 2019 via the SqlServer provider + migrations (CLAUDE.md §3). The DbContext/repositories are provider-agnostic. |
+| **SQLite file DB** (`backend/Api/App_Data/mems-demo.db`, created via `EnsureCreated` — no migrations, so **schema changes require deleting the file**; it reseeds on start) | SQL Server 2019 via the SqlServer provider + migrations (CLAUDE.md §3). The DbContext/repositories are provider-agnostic. |
+| **Receipt images stored as blobs in the DB**, orphaned uploads never cleaned up | File/blob storage outside the DB + a retention/cleanup job. |
 | **Mock OTP** (any 6-digit code; bearer token = email) | Real email OTP + signed, expiring tokens (CLAUDE.md §10). |
 | **Seeded fictional employee** (Ayesha, Grade M2) and demo approvers | Attendance/Payroll directory feed + real identities. |
 | **Online-only submission** | Re-enable the offline Dexie queue + sync engine (already scaffolded) for unstable-network capture. |
+| **VAPID keys auto-generated** into `App_Data/vapid-keys.json` (git-ignored) | Set `Push:PublicKey`/`Push:PrivateKey` via user-secrets/env. |
+
+### Demoing push notifications (browser closed)
+
+Web Push needs the built service worker — it is off in `npm run dev`. Either use the
+API-served app (https://localhost:7112, after copying `frontend/dist` to `backend/Api/wwwroot`)
+or `npm run build && npm run preview` (http://localhost:4173). Steps: sign in as `manager@`,
+allow notifications when prompted, close the browser completely, then submit a claim as
+`ayesha@` from another browser/curl — a Windows notification appears; clicking it opens the
+app. Caveats: Chrome must be allowed to run in the background, Windows Focus Assist off, and
+the push service needs outbound internet.
 
 ## Still open (policy, not code)
 

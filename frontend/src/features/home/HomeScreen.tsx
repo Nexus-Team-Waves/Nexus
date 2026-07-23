@@ -1,7 +1,8 @@
-import { BellIcon, ListIcon, PersonIcon, PlusIcon, StethoscopeIcon } from '../../components/icons'
+import { ListIcon, PersonIcon, PlusIcon, StethoscopeIcon } from '../../components/icons'
 import StatusPill from '../../components/StatusPill'
+import NotificationsBell from '../../components/NotificationsBell'
 import { claimPrimaryLabel, formatRs } from '../../types/domain'
-import type { ClaimDto, EntitlementDto } from '../../types/api'
+import type { ClaimDto, EntitlementDto, NotificationDto } from '../../types/api'
 
 /**
  * Home: greeting, remaining entitlement, the two primary actions, and a short "Recent" list —
@@ -10,12 +11,18 @@ import type { ClaimDto, EntitlementDto } from '../../types/api'
 export default function HomeScreen({
   entitlement,
   recent,
+  notifications,
+  unreadCount,
+  onMarkAllRead,
   onNavigate,
   onOpenClaim,
   onSignOut,
 }: {
   entitlement: EntitlementDto
   recent: ClaimDto[]
+  notifications: NotificationDto[]
+  unreadCount: number
+  onMarkAllRead: () => void
   onNavigate: (screen: 'submit' | 'claims') => void
   onOpenClaim: (id: string) => void
   onSignOut: () => void
@@ -31,9 +38,7 @@ export default function HomeScreen({
           <h1 className="greeting">Hello, {entitlement.firstName}</h1>
           <p className="greeting-sub">{entitlement.gradeLabel}</p>
         </div>
-        <button type="button" className="icon-btn" aria-label="Notifications">
-          <BellIcon />
-        </button>
+        <NotificationsBell items={notifications} unreadCount={unreadCount} onMarkAllRead={onMarkAllRead} />
       </header>
 
       <section className="balance-card">

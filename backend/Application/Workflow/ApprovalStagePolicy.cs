@@ -30,18 +30,25 @@ public static class ApprovalStagePolicy
     /// <summary>
     /// The next stage after the current one approves everything. Finance branches: claims whose
     /// approved total exceeds the (admin-configurable) threshold need Top-Level sign-off; otherwise
-    /// they complete. NOTE: the policy leaves "threshold per line or per claim total" OPEN — this
-    /// demo evaluates it on the claim total.
+    /// they complete. Admin/HR may escalate a claim DIRECTLY to Top-Level, skipping Finance review
+    /// (decision 2026-07-23; Finance still records the SAP posting afterwards). NOTE: the policy
+    /// leaves "threshold per line or per claim total" OPEN — this demo evaluates the claim total.
     /// </summary>
-    public static ApprovalStage NextStage(ApprovalStage current, decimal approvedTotal, decimal threshold)
+    public static ApprovalStage NextStage(ApprovalStage current, decimal approvedTotal, decimal threshold, bool escalatedToTopLevel)
         => current switch
         {
             ApprovalStage.LineManager => ApprovalStage.AdminHr,
-            ApprovalStage.AdminHr => ApprovalStage.Finance,
+            ApprovalStage.AdminHr => escalatedToTopLevel ? ApprovalStage.TopLevel : ApprovalStage.Finance,
             ApprovalStage.Finance => approvedTotal > threshold ? ApprovalStage.TopLevel : ApprovalStage.Completed,
             ApprovalStage.TopLevel => ApprovalStage.Completed,
             _ => ApprovalStage.Completed,
         };
+
+    /// <summary>
+    /// Whether this stage may reduce (partially approve) a line. The Line Manager approves in
+    /// full or rejects only — reduction is available from Admin/HR onward (decision 2026-07-23).
+    /// </summary>
+    public static bool CanReduce(ApprovalStage stage) => stage != ApprovalStage.LineManager;
 
     public static string RoleLabel(UserRole role) => role switch
     {
@@ -60,6 +67,7 @@ public static class ApprovalStagePolicy
         ApprovalStage.TopLevel => "Top-Level Approver",
         ApprovalStage.Completed => "Completed",
         ApprovalStage.ReturnedToEmployee => "Returned to employee",
+        ApprovalStage.Closed => "Closed — rejected (final)",
         _ => stage.ToString(),
     };
 }

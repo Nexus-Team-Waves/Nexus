@@ -7,6 +7,10 @@ public abstract class WorkflowException(string message) : Exception(message);
 public sealed class ClaimNotFoundException(Guid id)
     : WorkflowException($"Claim '{id}' was not found.");
 
+/// <summary>The receipt image does not exist → 404.</summary>
+public sealed class ReceiptNotFoundException(Guid id)
+    : WorkflowException($"Receipt '{id}' was not found.");
+
 /// <summary>The caller may not perform this action (wrong role/owner) → 403.</summary>
 public sealed class WorkflowForbiddenException(string message) : WorkflowException(message);
 

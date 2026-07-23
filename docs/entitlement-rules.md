@@ -8,7 +8,7 @@
 
 ## Scope
 
-- MEMS covers **Grade M and Grade E employees only.**
+- MEMS covers **Grade M and Grade E (E+ Plus other) employees only.**
 - Worker & Staff up to Grade S are covered by Social Security, not company reimbursement —
   **out of scope for MEMS.**
 - Eligibility is sourced from a maintained **entitlement lookup** (grade, join date, dependant
@@ -97,7 +97,13 @@ A claim is a header with one or more line items:
   - **Claimed amount** and **approved amount** (null until a stage acts on this line).
   - **Line status:** Pending → Approved / Partially approved / Rejected.
   - **Rejection reason:** required text when a line is rejected.
-  - **Receipt attachment:** photo (device camera) or uploaded file.
+  - **Receipt attachment:** photo (device camera) or uploaded file. **Required on every
+    line** — a claim cannot be submitted (or edited to a state) without one per line;
+    enforced client-side and in `SubmitClaimRequestValidator`. The image bytes (JPEG/PNG,
+    ≤ 5 MB) are uploaded to the server and stored; the claim line carries the stored
+    receipt's id. Visible to the owner and every approver; approvers can export each line
+    as a PDF. Claims submitted before image upload existed hold only a filename and degrade
+    gracefully (details-only PDF, "no stored image" note).
   - **Days-elapsed indicator:** show days between expense date and submission date (see
     Claim submission timing below) — informational, not a validation gate.
 - **Claim-level totals:** `Total claimed` = sum of claimed amounts. `Total approved` = sum of
@@ -144,6 +150,32 @@ A claim is a header with one or more line items:
 - **Standard claim:** sequential — **Line Manager → Admin/HR → Finance.**
 - **Approval is per line, not per claim.** At each stage, the approver evaluates every line
   individually: approve in full, reduce (partial approval), or reject with a reason.
+- **Stage capability — Line Manager cannot reduce (decision 2026-07-23):** the Line Manager
+  (HOD) stage approves in full or rejects with a reason only. Reduction is available from
+  Admin/HR onward. Enforced server-side; the Reduce option is hidden in the Line Manager UI.
+- **Receipts visible to every approver:** each line's receipt image can be viewed inline and
+  downloaded as a **per-line PDF** (line details + image) at every approval stage.
+- **Per-line audit trail & comments (2026-07-23):** every submit/resubmit and every per-line
+  decision (approved/reduced amount, rejection reason) is recorded as an append-only line
+  event, with an optional free-text comment from the initiator or the approver. The full
+  trail is visible to the employee and to every stage.
+- **Admin/HR escalation (2026-07-23):** Admin/HR may forward a claim **directly to the
+  Top-Level Approver, skipping Finance review** (regardless of the threshold). Finance still
+  records the SAP posting after completion. The flag applies per decision round — a claim
+  returned and resubmitted must be forwarded again or it follows the normal path.
+- **Finance is split by grade (2026-07-23):** claims of **M-grade** employees are reviewed and
+  posted by the authority signed in as `Approval:FinanceMGradeEmail` (default
+  mapproval@waves.com.pk); all other claims by `Approval:FinanceOtherEmail` (default
+  otherapproval@waves.com.pk). Both addresses are configuration — changeable without a code
+  change. Each authority sees only its own queue.
+- **Resubmit keeps approvals (2026-07-23):** when a claim is returned because a line was
+  rejected, the lines already approved/reduced are **locked** — the employee cannot change
+  them, lines cannot be added or removed, and no stage decides them again. Only the edited
+  (previously rejected) lines restart at Line Manager. *Accepted consequence:* a line approved
+  at the same stage where a sibling was rejected does not revisit the later stages.
+- **Stage-wise notifications (2026-07-23):** the approver whose queue a claim enters is
+  notified by Web Push (arrives even with the browser closed); the employee and all signed-in
+  users see in-app bell/toast notifications for returns, approvals, and postings.
 - **Extra approval for large claims:** no fixed Rs threshold. The **threshold amount is
   admin-configurable** (read from config at runtime, changeable without a code deploy).
   Claims exceeding it require an additional stage: **Top-Level Approver** (also referred to
@@ -251,3 +283,5 @@ Only decided rules are encoded; open items are left as explicit, un-guessed gaps
 and advance flow, increment/advance ledgers, M-grade Entitled-Salary encryption + the Admin/HR
 "never see the salary" screen restriction, and enforcement (vs. display) of sub-limits and
 dependant-coverage at approval time. **Still open in policy:** the four items listed above.
+
+

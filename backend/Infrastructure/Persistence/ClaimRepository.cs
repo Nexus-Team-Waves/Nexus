@@ -9,7 +9,7 @@ namespace Mems.Infrastructure.Persistence;
 public sealed class ClaimRepository(MemsDbContext db) : IClaimRepository
 {
     private IQueryable<ClaimRecord> Full =>
-        db.Claims.Include(c => c.Lines).Include(c => c.History);
+        db.Claims.Include(c => c.Lines).Include(c => c.History).Include(c => c.LineEvents);
 
     public async Task<ClaimRecord?> GetAsync(Guid id, CancellationToken ct = default)
         => await Full.FirstOrDefaultAsync(c => c.Id == id, ct);

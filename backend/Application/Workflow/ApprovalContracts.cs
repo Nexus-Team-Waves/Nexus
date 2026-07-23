@@ -29,7 +29,21 @@ public sealed record ClaimLineDto(
     decimal? ApprovedAmount,
     string Status,
     string? RejectionReason,
-    string? ReceiptReference);
+    string? ReceiptReference,
+    IReadOnlyList<Guid> ReceiptIds,
+    bool Locked,
+    IReadOnlyList<ClaimLineEventDto> Events);
+
+/// <summary>One per-line audit entry: a submit/decision plus its amount, reason, and comment.</summary>
+public sealed record ClaimLineEventDto(
+    string StageLabel,
+    string Action,
+    string ActorRole,
+    string ActorName,
+    decimal? Amount,
+    string? Reason,
+    string? Comment,
+    DateTime At);
 
 public sealed record ApprovalEventDto(
     string Stage,
@@ -38,11 +52,15 @@ public sealed record ApprovalEventDto(
     string Summary,
     DateTime At);
 
-/// <summary>A stage's decision on every line of a claim (the approver submits all at once).</summary>
-public sealed record DecideRequest(IReadOnlyList<LineDecisionInput> Lines);
+/// <summary>
+/// A stage's decision on every PENDING line of a claim (lines locked by an earlier round need no
+/// decision). ForwardToTopLevel is honoured only at the Admin/HR stage: it sends the claim
+/// directly to the Top-Level Approver, skipping Finance review.
+/// </summary>
+public sealed record DecideRequest(IReadOnlyList<LineDecisionInput> Lines, bool ForwardToTopLevel = false);
 
 /// <summary>Action is "approve" | "reduce" | "reject". Amount required for reduce; Reason for reject.</summary>
-public sealed record LineDecisionInput(Guid LineId, string Action, decimal? Amount, string? Reason);
+public sealed record LineDecisionInput(Guid LineId, string Action, decimal? Amount, string? Reason, string? Comment = null);
 
 /// <summary>Finance records the manual SAP posting reference (docs/CLAUDE.md §7).</summary>
 public sealed record PostRequest(string SapReference);

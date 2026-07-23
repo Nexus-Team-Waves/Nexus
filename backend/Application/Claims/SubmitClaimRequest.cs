@@ -29,7 +29,12 @@ public sealed record SubmitClaimRequest(
 /// <param name="Category">The claim category for this line.</param>
 /// <param name="ExpenseDate">When the expense/treatment was incurred.</param>
 /// <param name="ClaimedAmount">Amount claimed, in PKR. Must be greater than zero.</param>
-/// <param name="ReceiptReference">Pointer to the uploaded receipt image/file.</param>
+/// <param name="ReceiptReference">Display string for the receipts (joined original filenames).</param>
+/// <param name="ReceiptIds">
+/// Ids returned by POST /api/receipts for this line's uploaded images (1–5 per line, enforced
+/// by the validator). Trailing defaults keep older positional constructions compiling.
+/// </param>
+/// <param name="Comment">Optional initiator note on this line, visible to every approver.</param>
 public sealed record SubmitClaimLine(
     Guid LineId,
     BeneficiaryKind BeneficiaryKind,
@@ -38,4 +43,6 @@ public sealed record SubmitClaimLine(
     ClaimCategory Category,
     DateOnly ExpenseDate,
     decimal ClaimedAmount,
-    string? ReceiptReference);
+    string? ReceiptReference,
+    IReadOnlyList<Guid>? ReceiptIds = null,
+    string? Comment = null);

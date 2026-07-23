@@ -24,6 +24,12 @@ public enum ApprovalStage
     TopLevel = 3,
     Completed = 4,
     ReturnedToEmployee = 5,
+
+    /// <summary>
+    /// The Top-Level Approver rejected every item — final. Not editable, never postable
+    /// (decision 2026-07-23). Values are persisted ints: append only, never renumber.
+    /// </summary>
+    Closed = 6,
 }
 
 /// <summary>The decision on a single line at the current stage.</summary>
@@ -43,4 +49,6 @@ public enum ClaimOverallStatus
     Approved = 2,
     ActionNeeded = 3,
     Posted = 4,
+    /// <summary>Closed by the Top-Level Approver with every item rejected — final.</summary>
+    Rejected = 5,
 }

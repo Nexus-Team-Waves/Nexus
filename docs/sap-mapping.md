@@ -33,3 +33,6 @@ If a future phase decides to add live SAP integration, that's a new architectura
 not a resumption of the old design in this file's git history. Revisit CLAUDE.md §4 and §7,
 and treat the object-type/GL-account/idempotency questions as open again from scratch —
 SAP B1 configuration may have moved on by then.
+
+
+

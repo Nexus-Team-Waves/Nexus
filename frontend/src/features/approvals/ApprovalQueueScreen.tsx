@@ -1,5 +1,6 @@
 import { claimPrimaryLabel, formatRs } from '../../types/domain'
-import type { ClaimDto } from '../../types/api'
+import NotificationsBell from '../../components/NotificationsBell'
+import type { ClaimDto, NotificationDto } from '../../types/api'
 
 /**
  * An approver's queue: the claims awaiting their stage (Finance also sees completed claims that
@@ -9,12 +10,18 @@ export default function ApprovalQueueScreen({
   roleLabel,
   displayName,
   claims,
+  notifications,
+  unreadCount,
+  onMarkAllRead,
   onOpen,
   onSignOut,
 }: {
   roleLabel: string
   displayName: string
   claims: ClaimDto[]
+  notifications: NotificationDto[]
+  unreadCount: number
+  onMarkAllRead: () => void
   onOpen: (claim: ClaimDto) => void
   onSignOut: () => void
 }) {
@@ -25,7 +32,10 @@ export default function ApprovalQueueScreen({
           <h1 className="greeting">Approvals</h1>
           <p className="greeting-sub">{roleLabel} · {displayName}</p>
         </div>
-        <button type="button" className="btn btn--link" onClick={onSignOut}>Sign out</button>
+        <div className="head-actions">
+          <NotificationsBell items={notifications} unreadCount={unreadCount} onMarkAllRead={onMarkAllRead} />
+          <button type="button" className="btn btn--link" onClick={onSignOut}>Sign out</button>
+        </div>
       </header>
 
       {claims.length === 0 ? (

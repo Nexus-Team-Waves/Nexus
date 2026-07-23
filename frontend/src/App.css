@@ -394,7 +394,9 @@
 .review-line-head { display: flex; justify-content: space-between; align-items: center; font-size: 1.05rem; }
 
 .seg {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+  /* Column-per-child so the control lays out correctly with 2 actions (Line Manager
+     has no Reduce) or 3 (every later stage). */
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px;
   margin-top: 10px; border: 1px solid var(--border); border-radius: 9px; padding: 3px;
 }
 .seg-btn {
@@ -409,6 +411,59 @@
 .review-input {
   margin-top: 8px; width: 100%; font: inherit; padding: 0.55rem 0.7rem;
   border: 1px solid var(--border-strong); border-radius: 8px; background: var(--bg); color: var(--ink);
+}
+
+.receipt-row { margin-top: 8px; }
+.receipt-actions { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.receipt-preview {
+  margin-top: 8px; max-width: 100%; border: 1px solid var(--border); border-radius: 8px;
+}
+
+/* Locked items (approved in an earlier round) render muted and read-only. */
+.item-card--locked, .review-line--locked { opacity: 0.75; background: var(--bg); }
+
+/* Per-line row on the employee's claims list: status pill + amounts + timeline. */
+.claim-line-item { display: block; }
+.claim-line-row { display: flex; justify-content: space-between; gap: 8px; }
+.claim-line-amounts { white-space: nowrap; }
+.claim-line-amounts s { color: var(--muted); margin-right: 4px; }
+
+.line-timeline { margin-top: 4px; font-size: 0.82rem; }
+.line-timeline summary { cursor: pointer; color: var(--muted); }
+.line-comment { color: var(--muted); }
+
+.escalate-row {
+  display: flex; gap: 10px; align-items: flex-start; margin: 12px 0;
+  font-size: 0.88rem; color: var(--ink-2);
+}
+.escalate-row input { margin-top: 3px; }
+
+/* Notifications: bell + badge + dropdown panel + transient toasts. */
+.head-actions { display: flex; align-items: center; gap: 8px; }
+.bell-wrap { position: relative; }
+.bell-badge {
+  position: absolute; top: -2px; right: -2px; min-width: 16px; height: 16px; padding: 0 4px;
+  border-radius: 8px; background: #b91c1c; color: #fff; font-size: 0.65rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.bell-panel {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; width: min(320px, 84vw);
+  max-height: 320px; overflow-y: auto; background: var(--bg-elev, var(--bg));
+  border: 1px solid var(--border-strong); border-radius: 12px; padding: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+.bell-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.bell-list li { display: grid; gap: 2px; font-size: 0.82rem; padding: 6px; border-radius: 8px; }
+.bell-list li time { color: var(--muted); font-size: 0.72rem; }
+.bell-item--unread { background: color-mix(in srgb, var(--border) 40%, transparent); }
+
+.toast-stack {
+  position: fixed; bottom: 76px; left: 50%; transform: translateX(-50%); z-index: 40;
+  display: grid; gap: 8px; width: min(360px, 90vw);
+}
+.toast {
+  display: grid; gap: 2px; padding: 10px 14px; border-radius: 10px; font-size: 0.85rem;
+  background: var(--ink); color: var(--bg); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
 }
 .review-input:focus { outline: 2px solid var(--brand); outline-offset: -1px; }
 

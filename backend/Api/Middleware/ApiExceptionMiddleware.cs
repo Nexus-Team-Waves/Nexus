@@ -24,6 +24,10 @@ public sealed class ApiExceptionMiddleware(RequestDelegate next, ILogger<ApiExce
         {
             await Write(context, StatusCodes.Status404NotFound, "Not found", ex.Message);
         }
+        catch (ReceiptNotFoundException ex)
+        {
+            await Write(context, StatusCodes.Status404NotFound, "Not found", ex.Message);
+        }
         catch (WorkflowForbiddenException ex)
         {
             await Write(context, StatusCodes.Status403Forbidden, "Forbidden", ex.Message);

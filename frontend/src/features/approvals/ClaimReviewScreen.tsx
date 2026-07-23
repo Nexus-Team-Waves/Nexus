@@ -1,34 +1,51 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { formatRs, shortCategory } from '../../types/domain'
-import { ApiError, decideClaim, postClaim } from '../../api/client'
-import type { ClaimDto, DecisionAction, LineDecision } from '../../types/api'
+import { ApiError, decideClaim, getLineReceiptPdf, getReceiptImage, postClaim } from '../../api/client'
+import LineTimeline from '../../components/LineTimeline'
+import type { ClaimDto, ClaimLineDto, DecisionAction, LineDecision, Role } from '../../types/api'
 
 /**
- * Review one claim. In an approval stage, the approver decides every line (approve / reduce /
- * reject-with-reason) and submits them together — the server then advances the claim or returns it
- * (docs/entitlement-rules.md § Approval flow). For a completed claim, Finance records the manual
- * SAP posting reference instead (docs/CLAUDE.md §7).
+ * Review one claim. In an approval stage, the approver decides every PENDING line (approve /
+ * reduce / reject-with-reason) and submits them together — the server then advances the claim or
+ * returns it (docs/entitlement-rules.md § Approval flow). Lines locked by an earlier round
+ * (approved before a sibling was rejected and resubmitted) are shown read-only and never
+ * re-decided. For a completed claim, Finance records the manual SAP posting reference instead.
  */
 interface LineChoice {
   action: DecisionAction
   amount: string // for 'reduce'
   reason: string // for 'reject'
+  comment: string // optional note, visible to the employee and later stages
 }
 
 export default function ClaimReviewScreen({
   claim,
+  role,
   onBack,
   onUpdated,
 }: {
   claim: ClaimDto
+  role: Role
   onBack: () => void
   onUpdated: (updated: ClaimDto) => void
 }) {
   const posting = claim.stage === 'Completed' && !claim.posted
 
+  // Stage capability: the Line Manager approves in full or rejects — never reduces
+  // (docs/entitlement-rules.md § Approval flow). The server enforces this too; hiding the
+  // button just keeps the UI honest about what this role can do.
+  const actions: DecisionAction[] =
+    role === 'LineManager' ? ['approve', 'reject'] : ['approve', 'reduce', 'reject']
+
+  // Only pending lines get a decision; locked lines were decided in an earlier round.
+  const pendingLines = claim.lines.filter((l) => l.status === 'Pending')
+
   const [choices, setChoices] = useState<Record<string, LineChoice>>(() =>
-    Object.fromEntries(claim.lines.map((l) => [l.lineId, { action: 'approve', amount: String(l.currentAmount), reason: '' }])),
+    Object.fromEntries(pendingLines.map((l) => [l.lineId, { action: 'approve', amount: String(l.currentAmount), reason: '', comment: '' }])),
   )
+  // Admin/HR only: forward the claim directly to the Top-Level Approver, skipping Finance
+  // review (Finance still records the SAP posting at the end).
+  const [forwardToTopLevel, setForwardToTopLevel] = useState(false)
   const [sapRef, setSapRef] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -41,26 +58,27 @@ export default function ClaimReviewScreen({
   async function submitDecision() {
     setError(null)
     const decisions: LineDecision[] = []
-    for (const line of claim.lines) {
+    for (const line of pendingLines) {
       const c = choices[line.lineId]!
+      const comment = c.comment.trim() || undefined
       if (c.action === 'reduce') {
         const amount = Number.parseFloat(c.amount)
         if (!Number.isFinite(amount) || amount <= 0 || amount >= line.currentAmount) {
           setError(`${shortCategory(line.category)}: a reduced amount must be between 0 and ${formatRs(line.currentAmount)}.`)
           return
         }
-        decisions.push({ lineId: line.lineId, action: 'reduce', amount })
+        decisions.push({ lineId: line.lineId, action: 'reduce', amount, comment })
       } else if (c.action === 'reject') {
         if (!c.reason.trim()) { setError(`${shortCategory(line.category)}: a rejection needs a reason.`); return }
-        decisions.push({ lineId: line.lineId, action: 'reject', reason: c.reason.trim() })
+        decisions.push({ lineId: line.lineId, action: 'reject', reason: c.reason.trim(), comment })
       } else {
-        decisions.push({ lineId: line.lineId, action: 'approve' })
+        decisions.push({ lineId: line.lineId, action: 'approve', comment })
       }
     }
 
     setBusy(true)
     try {
-      const updated = await decideClaim(claim.id, decisions)
+      const updated = await decideClaim(claim.id, decisions, role === 'AdminHr' && forwardToTopLevel)
       onUpdated(updated)
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Could not submit the decision.')
@@ -96,13 +114,14 @@ export default function ClaimReviewScreen({
       {posting ? (
         <>
           <div className="review-lines">
-            {claim.lines.map((l) => (
+            {claim.lines.map((l, index) => (
               <div key={l.lineId} className="review-line">
                 <div className="review-line-head">
                   <strong>{shortCategory(l.category)}</strong>
                   <span>{formatRs(l.approvedAmount ?? 0)}</span>
                 </div>
                 <p className="claim-card-meta">{l.beneficiaryKind === 'Self' ? 'Self' : 'Dependant'}</p>
+                <ReceiptRow claimId={claim.id} line={l} itemNumber={index + 1} />
               </div>
             ))}
           </div>
@@ -121,7 +140,25 @@ export default function ClaimReviewScreen({
       ) : (
         <>
           <div className="review-lines">
-            {claim.lines.map((line) => {
+            {claim.lines.map((line, index) => {
+              // Locked = approved/reduced in an earlier round; never re-decided (2026-07-23).
+              if (line.locked) {
+                return (
+                  <div key={line.lineId} className="review-line review-line--locked">
+                    <div className="review-line-head">
+                      <strong>{shortCategory(line.category)}</strong>
+                      <span>{formatRs(line.currentAmount)}</span>
+                    </div>
+                    <p className="claim-card-meta">
+                      {line.beneficiaryKind === 'Self' ? 'Self' : 'Dependant'} · decided in an
+                      earlier round — {line.status === 'Reduced' ? 'reduced to' : 'approved at'} {formatRs(line.currentAmount)}
+                    </p>
+                    <ReceiptRow claimId={claim.id} line={line} itemNumber={index + 1} />
+                    <LineTimeline events={line.events} />
+                  </div>
+                )
+              }
+
               const c = choices[line.lineId]!
               return (
                 <div key={line.lineId} className="review-line">
@@ -134,8 +171,11 @@ export default function ClaimReviewScreen({
                     {line.claimedAmount !== line.currentAmount ? ` · originally ${formatRs(line.claimedAmount)}` : ''}
                   </p>
 
+                  <ReceiptRow claimId={claim.id} line={line} itemNumber={index + 1} />
+                  <LineTimeline events={line.events} />
+
                   <div className="seg">
-                    {(['approve', 'reduce', 'reject'] as DecisionAction[]).map((a) => (
+                    {actions.map((a) => (
                       <button
                         key={a}
                         type="button"
@@ -161,10 +201,30 @@ export default function ClaimReviewScreen({
                       aria-label="Rejection reason"
                     />
                   )}
+                  <input
+                    className="review-input" type="text" maxLength={500}
+                    placeholder="Comment (optional — visible to the employee and later stages)"
+                    value={c.comment} onChange={(e) => setChoice(line.lineId, { comment: e.target.value })}
+                    aria-label="Line comment"
+                  />
                 </div>
               )
             })}
           </div>
+
+          {role === 'AdminHr' && (
+            <label className="escalate-row">
+              <input
+                type="checkbox"
+                checked={forwardToTopLevel}
+                onChange={(e) => setForwardToTopLevel(e.target.checked)}
+              />
+              <span>
+                Forward directly to the Top-Level Approver (skips Finance review; Finance still
+                records the SAP posting)
+              </span>
+            </label>
+          )}
 
           <button type="button" className="btn btn--primary btn--block" onClick={submitDecision} disabled={busy}>
             {busy ? 'Submitting…' : 'Submit decision'}
@@ -186,6 +246,78 @@ export default function ClaimReviewScreen({
           </ul>
         </details>
       )}
+    </div>
+  )
+}
+
+/**
+ * One line's receipt controls for approvers: toggle the image preview and download the
+ * per-line PDF. The image is fetched as a Blob because a plain <img src="/api/..."> cannot
+ * carry the Authorization header the API requires.
+ */
+function ReceiptRow({ claimId, line, itemNumber }: { claimId: string; line: ClaimLineDto; itemNumber: number }) {
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [note, setNote] = useState<string | null>(null)
+
+  // Object URLs hold browser memory until revoked; release the old one whenever it is
+  // replaced or the component unmounts.
+  useEffect(() => {
+    return () => { if (imageUrl) URL.revokeObjectURL(imageUrl) }
+  }, [imageUrl])
+
+  async function toggleImage() {
+    if (imageUrl) { setImageUrl(null); return } // hide (cleanup above revokes the URL)
+    if (!line.receiptId) return
+    setBusy(true)
+    setNote(null)
+    try {
+      const blob = await getReceiptImage(line.receiptId)
+      setImageUrl(URL.createObjectURL(blob))
+    } catch (e) {
+      setNote(e instanceof ApiError ? e.message : 'Could not load the receipt image.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function downloadPdf() {
+    setBusy(true)
+    setNote(null)
+    try {
+      const blob = await getLineReceiptPdf(claimId, line.lineId)
+      // Standard "download a Blob" dance: temporary object URL on a temporary <a download>.
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = `claim-${claimId.replaceAll('-', '').slice(0, 8)}-item-${itemNumber}-receipt.pdf`
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      setNote(e instanceof ApiError ? e.message : 'Could not download the receipt PDF.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="receipt-row">
+      <div className="receipt-actions">
+        {line.receiptId ? (
+          <button type="button" className="btn btn--link" onClick={toggleImage} disabled={busy}>
+            {imageUrl ? 'Hide receipt' : 'View receipt'}
+          </button>
+        ) : (
+          <span className="claim-card-meta">Receipt image not stored (legacy claim)</span>
+        )}
+        <button type="button" className="btn btn--link" onClick={downloadPdf} disabled={busy}>
+          Download PDF
+        </button>
+      </div>
+      {note && <p className="claim-card-meta" role="alert">{note}</p>}
+      {imageUrl && <img className="receipt-preview" src={imageUrl} alt={`Receipt for item ${itemNumber}`} />}
     </div>
   )
 }

@@ -19,7 +19,8 @@ public static class DemoSeed
         db.Claims.AddRange(
             PostedOpd(),
             CompletedHospitalisation(),
-            AwaitingLineManager());
+            AwaitingLineManager(),
+            ExecutiveAwaitingFinance());
 
         db.SaveChanges();
     }
@@ -44,8 +45,8 @@ public static class DemoSeed
         {
             Evt(id, ApprovalStage.LineManager, "Line Manager", "Bilal (Line Manager)", "Approved 1, reduced 0, rejected 0. → Admin/HR.", new DateTime(2026, 6, 13, 10, 0, 0, DateTimeKind.Utc)),
             Evt(id, ApprovalStage.AdminHr, "Admin/HR", "Sana (Admin/HR)", "Approved 1, reduced 0, rejected 0. → Finance.", new DateTime(2026, 6, 15, 11, 0, 0, DateTimeKind.Utc)),
-            Evt(id, ApprovalStage.Finance, "Finance", "Kamran (Finance)", "Approved 1, reduced 0, rejected 0. → Completed.", new DateTime(2026, 6, 17, 12, 0, 0, DateTimeKind.Utc)),
-            Evt(id, ApprovalStage.Completed, "Finance", "Kamran (Finance)", "Recorded SAP posting (ref AR-2026-000042).", new DateTime(2026, 6, 18, 15, 0, 0, DateTimeKind.Utc)),
+            Evt(id, ApprovalStage.Finance, "Finance", "Finance (M-Grade)", "Approved 1, reduced 0, rejected 0. → Completed.", new DateTime(2026, 6, 17, 12, 0, 0, DateTimeKind.Utc)),
+            Evt(id, ApprovalStage.Completed, "Finance", "Finance (M-Grade)", "Recorded SAP posting (ref AR-2026-000042).", new DateTime(2026, 6, 18, 15, 0, 0, DateTimeKind.Utc)),
         });
         return claim;
     }
@@ -84,6 +85,29 @@ public static class DemoSeed
                 Pending(id, "Consultation", 2_800m, new DateOnly(2026, 7, 12)),
             },
         };
+    }
+
+    // Executive employee's claim already at Finance — demonstrates the grade-routed split:
+    // it appears ONLY in otherapproval@'s queue, never in mapproval@'s.
+    private static ClaimRecord ExecutiveAwaitingFinance()
+    {
+        var id = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000004");
+        var claim = new ClaimRecord
+        {
+            Id = id,
+            EmployeeId = "DEMO-E-001",
+            SubmissionDate = new DateOnly(2026, 7, 15),
+            Stage = ApprovalStage.Finance,
+            CreatedAt = new DateTime(2026, 7, 15, 9, 0, 0, DateTimeKind.Utc),
+            UpdatedAt = new DateTime(2026, 7, 20, 10, 0, 0, DateTimeKind.Utc),
+            Lines = { Pending(id, "Opd", 4_500m, new DateOnly(2026, 7, 13)) },
+        };
+        claim.History.AddRange(new[]
+        {
+            Evt(id, ApprovalStage.LineManager, "Line Manager", "Bilal (Line Manager)", "Approved 1, reduced 0, rejected 0. → Admin/HR.", new DateTime(2026, 7, 16, 10, 0, 0, DateTimeKind.Utc)),
+            Evt(id, ApprovalStage.AdminHr, "Admin/HR", "Sana (Admin/HR)", "Approved 1, reduced 0, rejected 0. → Finance.", new DateTime(2026, 7, 20, 10, 0, 0, DateTimeKind.Utc)),
+        });
+        return claim;
     }
 
     private static ClaimLineRecord Decided(Guid claimId, string category, decimal amount, DateOnly date) => new()

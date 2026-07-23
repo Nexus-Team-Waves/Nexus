@@ -25,11 +25,21 @@ public static class DemoDirectory
         new Dictionary<string, AuthUser>(StringComparer.OrdinalIgnoreCase)
         {
             ["ayesha@waves.com.pk"] = new("ayesha@waves.com.pk", "Ayesha", UserRole.Employee, "DEMO-M-002"),
+            ["khalid@waves.com.pk"] = new("khalid@waves.com.pk", "Khalid", UserRole.Employee, "DEMO-E-001"),
             ["manager@waves.com.pk"] = new("manager@waves.com.pk", "Bilal (Line Manager)", UserRole.LineManager, null),
             ["hr@waves.com.pk"] = new("hr@waves.com.pk", "Sana (Admin/HR)", UserRole.AdminHr, null),
-            ["finance@waves.com.pk"] = new("finance@waves.com.pk", "Kamran (Finance)", UserRole.Finance, null),
+            // NOTE: Finance identities are NOT listed here — the two grade-routed Finance emails
+            // come from configuration (Approval:FinanceMGradeEmail / FinanceOtherEmail) and are
+            // resolved by AuthService BEFORE this directory (decision 2026-07-23).
             ["ed@waves.com.pk"] = new("ed@waves.com.pk", "Director (ED)", UserRole.TopLevel, null),
         };
+
+    /// <summary>
+    /// First directory account holding a role — used to route notifications to the approver of a
+    /// stage. Finance is config-routed and deliberately never found here.
+    /// </summary>
+    public static AuthUser? UserForRole(UserRole role)
+        => Users.Values.FirstOrDefault(u => u.Role == role);
 
     /// <summary>Employee master data, keyed by employee id.</summary>
     public static readonly IReadOnlyDictionary<string, DemoEmployee> Employees =
@@ -44,6 +54,11 @@ public static class DemoDirectory
                     new DemoDependant("DEMO-DEP-1", "Spouse", "Spouse"),
                     new DemoDependant("DEMO-DEP-2", "Child — Sample", "Child"),
                 }),
+            ["DEMO-E-001"] = new(
+                "DEMO-E-001", "Khalid", "Grade E3",
+                // Executive band → his claims route to the "other" Finance authority (not M-grade).
+                new EmployeeEntitlementProfile("DEMO-E-001", GradeBand.Executive, Money.FromRupees(150_000m), new DateOnly(2015, 1, 10)),
+                Array.Empty<DemoDependant>()),
         };
 
     /// <summary>

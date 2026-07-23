@@ -11,4 +11,13 @@ public sealed class ApprovalOptions
 
     /// <summary>Claims with an approved total above this (PKR) require the Top-Level Approver.</summary>
     public decimal TopLevelThreshold { get; set; } = 25_000m;
+
+    /// <summary>
+    /// Sign-in email of the Finance authority for M-grade employees' claims. Changeable in
+    /// config (Approval:FinanceMGradeEmail) without a code change — decision 2026-07-23.
+    /// </summary>
+    public string FinanceMGradeEmail { get; set; } = "mapproval@waves.com.pk";
+
+    /// <summary>Sign-in email of the Finance authority for all other (non-M-grade) claims.</summary>
+    public string FinanceOtherEmail { get; set; } = "otherapproval@waves.com.pk";
 }

@@ -6,8 +6,12 @@ using Mems.Api.Middleware;
 using Mems.Application.Auth;
 using Mems.Application.Claims;
 using Mems.Application.Entitlement;
+using Mems.Application.Notifications;
+using Mems.Application.Receipts;
 using Mems.Application.Workflow;
+using Mems.Infrastructure.Pdf;
 using Mems.Infrastructure.Persistence;
+using Mems.Infrastructure.Push;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,6 +50,18 @@ builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 builder.Services.AddScoped<IClaimRepository, ClaimRepository>();
 builder.Services.AddScoped<ClaimWorkflowService>();
 builder.Services.AddScoped<IValidator<SubmitClaimRequest>, SubmitClaimRequestValidator>();
+
+// Receipt images + the per-line PDF for approvers.
+builder.Services.AddScoped<IReceiptRepository, ReceiptRepository>();
+builder.Services.AddScoped<ReceiptService>();
+builder.Services.AddSingleton<IReceiptPdfRenderer, ReceiptPdfRenderer>(); // stateless
+
+// Grade-routed Finance stage (Approval:Finance*Email) + stage-wise notifications with Web Push.
+builder.Services.AddSingleton<FinanceRoutingService>();
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<IClaimNotifier, NotificationService>();
+builder.Services.AddSingleton(VapidKeyStore.LoadOrCreate(dataDir, builder.Configuration));
+builder.Services.AddSingleton<IPushSender, WebPushSender>();
 
 // Entitlement.
 builder.Services.AddSingleton<IEmployeeEntitlementProfileProvider, DemoEmployeeProfileProvider>();

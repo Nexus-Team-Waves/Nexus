@@ -13,6 +13,8 @@ import type {
   ClaimDto,
   EntitlementDto,
   LineDecision,
+  NotificationDto,
+  ReceiptUploadResponse,
   SubmitClaimRequest,
 } from '../types/api'
 
@@ -66,6 +68,52 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (text ? JSON.parse(text) : undefined) as T
 }
 
+/** Shared "turn a non-2xx response into an ApiError" step for the binary helpers below. */
+async function throwApiError(response: Response): Promise<never> {
+  let detail = ''
+  try {
+    const body = await response.json()
+    detail = body?.detail ?? body?.title ?? ''
+  } catch {
+    detail = await response.text().catch(() => '')
+  }
+  throw new ApiError(detail || `Request failed (${response.status})`, response.status)
+}
+
+/**
+ * Upload one receipt image (multipart/form-data). Deliberately does NOT set a Content-Type
+ * header — the browser must set it itself so the multipart boundary is included.
+ */
+export async function uploadReceipt(file: File): Promise<ReceiptUploadResponse> {
+  const form = new FormData()
+  form.append('file', file)
+  const headers: Record<string, string> = {}
+  if (token) headers.Authorization = `Bearer ${token}`
+
+  const response = await fetch(`${BASE_URL}/api/receipts`, { method: 'POST', body: form, headers })
+  if (!response.ok) await throwApiError(response)
+  return (await response.json()) as ReceiptUploadResponse
+}
+
+/**
+ * Fetch a binary endpoint as a Blob. A plain <img src> / <a href> cannot carry the bearer
+ * token, so binary content is fetched here and turned into an object URL by the caller.
+ */
+async function requestBlob(path: string): Promise<Blob> {
+  const headers: Record<string, string> = {}
+  if (token) headers.Authorization = `Bearer ${token}`
+  const response = await fetch(`${BASE_URL}${path}`, { headers })
+  if (!response.ok) await throwApiError(response)
+  return response.blob()
+}
+
+/** The stored receipt image (owner or any approver). */
+export const getReceiptImage = (receiptId: string) => requestBlob(`/api/receipts/${receiptId}`)
+
+/** One claim line's details + receipt image as a PDF (approvers only). */
+export const getLineReceiptPdf = (claimId: string, lineId: string) =>
+  requestBlob(`/api/approvals/${claimId}/lines/${lineId}/receipt.pdf`)
+
 // ---- Auth ----
 export const requestCode = (email: string) =>
   request<{ sent: boolean }>('/api/auth/request-code', { method: 'POST', body: JSON.stringify({ email }) })
@@ -87,7 +135,19 @@ export const editClaim = (id: string, payload: SubmitClaimRequest) =>
 
 // ---- Approvals (approver) ----
 export const getApprovalQueue = () => request<ClaimDto[]>('/api/approvals')
-export const decideClaim = (id: string, lines: LineDecision[]) =>
-  request<ClaimDto>(`/api/approvals/${id}/decide`, { method: 'POST', body: JSON.stringify({ lines }) })
+export const decideClaim = (id: string, lines: LineDecision[], forwardToTopLevel = false) =>
+  request<ClaimDto>(`/api/approvals/${id}/decide`, { method: 'POST', body: JSON.stringify({ lines, forwardToTopLevel }) })
 export const postClaim = (id: string, sapReference: string) =>
   request<ClaimDto>(`/api/approvals/${id}/post`, { method: 'POST', body: JSON.stringify({ sapReference }) })
+
+// ---- Notifications ----
+export const getNotifications = () => request<NotificationDto[]>('/api/notifications')
+export const markNotificationsRead = () =>
+  request<{ ok: boolean }>('/api/notifications/read-all', { method: 'POST' })
+
+// ---- Web Push (approvers get stage alerts even with the browser closed) ----
+export const getVapidPublicKey = () => request<{ publicKey: string }>('/api/push/vapid-public-key')
+export const subscribePush = (endpoint: string, p256dh: string, auth: string) =>
+  request<{ ok: boolean }>('/api/push/subscribe', { method: 'POST', body: JSON.stringify({ endpoint, p256dh, auth }) })
+export const unsubscribePush = (endpoint: string) =>
+  request<{ ok: boolean }>('/api/push/subscribe', { method: 'DELETE', body: JSON.stringify({ endpoint }) })

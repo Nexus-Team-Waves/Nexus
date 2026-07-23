@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -sk -X POST https://localhost:7112/api/claims -H 'Authorization: Bearer ayesha@waves.com.pk' -H 'Content-Type: application/json' -d '{\"claimId\":\"33333333-3333-3333-3333-333333333333\",\"employeeId\":\"\",\"submissionDate\":\"2026-07-23\",\"lines\":[{\"lineId\":\"44444444-4444-4444-4444-444444444444\",\"beneficiaryKind\":\"Self\",\"category\":\"Opd\",\"expenseDate\":\"2026-07-21\",\"claimedAmount\":1500,\"receiptReference\":\"receipt.png\",\"receiptId\":\"10916d55-fab6-463b-a344-a60ba00ea263\"}]}' -w '\\\\nHTTP %{http_code}\\\\n')",
+      "Bash(curl -sk -X POST https://localhost:7112/api/claims -H \"Authorization: Bearer ayesha@waves.com.pk\" -H \"Content-Type: application/json\" -d '{\"claimId\":\"55555555-5555-5555-5555-555555555555\",\"employeeId\":\"\",\"submissionDate\":\"2026-07-23\",\"lines\":[{\"lineId\":\"66666666-6666-6666-6666-666666666666\",\"beneficiaryKind\":\"Self\",\"category\":\"Opd\",\"expenseDate\":\"2026-07-21\",\"claimedAmount\":1500,\"receiptReference\":\"x.png\",\"receiptId\":\"99999999-9999-9999-9999-999999999999\"}]}' -w \"\\\\nHTTP %{http_code}\\\\n\")",
+      "Bash(curl -sk -X POST https://localhost:7112/api/claims -H \"Authorization: Bearer ayesha@waves.com.pk\" -H \"Content-Type: application/json\" -d '{\"claimId\":\"77777777-7777-7777-7777-777777777777\",\"employeeId\":\"\",\"submissionDate\":\"2026-07-23\",\"lines\":[{\"lineId\":\"88888888-8888-8888-8888-888888888888\",\"beneficiaryKind\":\"Self\",\"category\":\"Opd\",\"expenseDate\":\"2026-07-21\",\"claimedAmount\":1500,\"receiptReference\":\"x.png\"}]}' -w \"\\\\nHTTP %{http_code}\\\\n\")",
+      "Bash(curl -sk -X POST https://localhost:7112/api/approvals/33333333-3333-3333-3333-333333333333/decide -H 'Authorization: Bearer manager@waves.com.pk' -H 'Content-Type: application/json' -d '{\"lines\":[{\"lineId\":\"2bf91c86-45d8-4ab3-8ba9-599245e61d1f\",\"action\":\"reduce\",\"amount\":1000}]}' -w '\\\\nHTTP %{http_code}\\\\n')",
+      "Bash(curl -sk -o /dev/null -w \"HTTP %{http_code} %{content_type} %{size_download}B\\\\n\" https://localhost:7112/api/receipts/10916d55-fab6-463b-a344-a60ba00ea263 -H \"Authorization: Bearer manager@waves.com.pk\")",
+      "Bash(curl -sk -o __TRACKED_VAR__/line1.pdf -w 'HTTP %{http_code} %{content_type} %{size_download}B\\\\n' https://localhost:7112/api/approvals/33333333-3333-3333-3333-333333333333/lines/2bf91c86-45d8-4ab3-8ba9-599245e61d1f/receipt.pdf -H 'Authorization: Bearer manager@waves.com.pk')",
+      "Bash(curl -sk -o /dev/null -w 'HTTP %{http_code}\\\\n' https://localhost:7112/api/approvals/33333333-3333-3333-3333-333333333333/lines/2bf91c86-45d8-4ab3-8ba9-599245e61d1f/receipt.pdf -H 'Authorization: Bearer ayesha@waves.com.pk')",
+      "Bash(curl -sk -o /c/Users/Faheem/AppData/Local/Temp/claude/d--Nexus/b637c45f-8782-4705-8945-8d666d808922/scratchpad/legacy.pdf -w 'HTTP %{http_code} %{content_type} %{size_download}B\\\\n' https://localhost:7112/api/approvals/aaaaaaaa-0000-0000-0000-000000000003/lines/a72f1f7a-4e89-4c98-ba61-847c53a246f7/receipt.pdf -H 'Authorization: Bearer manager@waves.com.pk')",
+      "PowerShell(dotnet test backend/Mems.sln --nologo -v q 2>&1)",
+      "Bash(node -e \"const c=JSON.parse\\(require\\('fs'\\).readFileSync\\(0\\)\\);console.log\\('stage:',c.stage,'| history:',c.history[c.history.length-1].summary\\)\")",
+      "Bash(curl -sk -X POST https://localhost:7112/api/approvals/bbbbbbbb-0000-0000-0000-000000000001/decide -H 'Authorization: Bearer ed@waves.com.pk' -H 'Content-Type: application/json' -d '{\"lines\":[{\"lineId\":\"369bf189-18af-43a5-bfb1-945ba5165824\",\"action\":\"approve\"}]}')",
+      "Bash(node -e \"const c=JSON.parse\\(require\\('fs'\\).readFileSync\\(0\\)\\);console.log\\('posted:',c.posted,'ref:',c.sapReference\\)\")",
+      "Bash(curl -sk https://localhost:7112/index.html)",
+      "Bash(curl -sk -o /dev/null -w \"sw.js: HTTP %{http_code}\\\\n\" https://localhost:7112/sw.js)",
+      "Bash(curl -sk https://localhost:7112/api/push/vapid-public-key -H \"Authorization: Bearer manager@waves.com.pk\")"
+    ]
+  }
+}

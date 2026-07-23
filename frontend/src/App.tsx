@@ -8,6 +8,9 @@ import SubmitScreen from './features/claims/SubmitScreen'
 import ClaimsScreen from './features/claims/ClaimsScreen'
 import ApprovalQueueScreen from './features/approvals/ApprovalQueueScreen'
 import ClaimReviewScreen from './features/approvals/ClaimReviewScreen'
+import { ToastStack } from './components/NotificationsBell'
+import { useNotifications } from './hooks/useNotifications'
+import { usePushSubscription } from './hooks/usePushSubscription'
 import { getApprovalQueue, getEntitlement, listMyClaims } from './api/client'
 import type { ApiUser, ClaimDto, EntitlementDto, Role } from './types/api'
 import './App.css'
@@ -68,6 +71,14 @@ function EmployeeApp({ onSignOut }: { onSignOut: () => void }) {
 
   useEffect(() => { void refresh() }, [refresh])
 
+  // In-app notifications; employees also get a system notification while the tab is in the
+  // background (approvers get real Web Push instead — see ApproverApp).
+  const notifications = useNotifications({ enabled: true, systemNotifications: true, onNew: () => void refresh() })
+  useEffect(() => {
+    // Ask once so background-tab notifications can show; declining just means toasts only.
+    if ('Notification' in window && Notification.permission === 'default') void Notification.requestPermission()
+  }, [])
+
   if (loading || !entitlement) return <p className="centered-note">Loading…</p>
 
   const onNavigate = (next: Screen) => {
@@ -83,6 +94,9 @@ function EmployeeApp({ onSignOut }: { onSignOut: () => void }) {
           <HomeScreen
             entitlement={entitlement}
             recent={claims.slice(0, 3)}
+            notifications={notifications.items}
+            unreadCount={notifications.unreadCount}
+            onMarkAllRead={() => void notifications.markAllRead()}
             onNavigate={(s) => (s === 'submit' ? onNavigate('submit') : setScreen('claims'))}
             onOpenClaim={() => setScreen('claims')}
             onSignOut={onSignOut}
@@ -95,6 +109,7 @@ function EmployeeApp({ onSignOut }: { onSignOut: () => void }) {
           <ClaimsScreen claims={claims} onEdit={(c) => { setEditing(c); setScreen('submit') }} />
         )}
       </div>
+      <ToastStack toasts={notifications.toasts} />
       <BottomNav active={screen} onNavigate={onNavigate} />
     </>
   )
@@ -113,6 +128,11 @@ function ApproverApp({ user, onSignOut }: { user: ApiUser; onSignOut: () => void
 
   useEffect(() => { void refresh() }, [refresh])
 
+  // In-app toasts + bell; system-level alerts come from Web Push (works even with the browser
+  // closed), so no browser-Notification fallback here — it would double up.
+  const notifications = useNotifications({ enabled: true, systemNotifications: false, onNew: () => void refresh() })
+  usePushSubscription(user)
+
   if (loading) return <p className="centered-note">Loading…</p>
 
   return (
@@ -120,6 +140,7 @@ function ApproverApp({ user, onSignOut }: { user: ApiUser; onSignOut: () => void
       {reviewing ? (
         <ClaimReviewScreen
           claim={reviewing}
+          role={user.role}
           onBack={() => setReviewing(null)}
           onUpdated={async () => { setReviewing(null); await refresh() }}
         />
@@ -128,10 +149,14 @@ function ApproverApp({ user, onSignOut }: { user: ApiUser; onSignOut: () => void
           roleLabel={ROLE_LABEL[user.role]}
           displayName={user.displayName}
           claims={queue}
+          notifications={notifications.items}
+          unreadCount={notifications.unreadCount}
+          onMarkAllRead={() => void notifications.markAllRead()}
           onOpen={(c) => setReviewing(c)}
           onSignOut={onSignOut}
         />
       )}
+      <ToastStack toasts={notifications.toasts} />
     </div>
   )
 }

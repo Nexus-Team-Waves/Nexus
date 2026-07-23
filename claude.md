@@ -91,7 +91,7 @@ dotnet run --project backend/Api --launch-profile https   # https://localhost:71
 npm install
 npm run dev       # http://localhost:5173 — proxies /api to https://localhost:7112
 npm run build     # tsc -b && vite build (also emits the service worker)
-npm run preview   # serve the production build — REQUIRED to test PWA/offline behaviour
+npm run preview   # serve the production build — REQUIRED to test PWA/offline behaviour and Web Push notifications
 npm run lint      # oxlint
 ```
 

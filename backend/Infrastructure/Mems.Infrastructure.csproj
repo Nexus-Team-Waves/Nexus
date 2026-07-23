@@ -11,6 +11,13 @@
          Microsoft.EntityFrameworkCore.SqlServer (SQL Server 2019, CLAUDE.md §3) — the DbContext and
          repositories are provider-agnostic; only the Program.cs registration and migrations change. -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.11" />
+    <!-- Per-line receipt PDFs for approvers. PDFsharp is MIT-licensed (free for commercial use —
+         deliberately chosen over QuestPDF, whose free tier does not cover Waves' revenue). The
+         Core build embeds JPEG/PNG only, which is why uploads are whitelisted to those types. -->
+    <PackageReference Include="PDFsharp" Version="6.2.4" />
+    <!-- Web Push (VAPID) so approvers get stage notifications even with the browser closed
+         (decision 2026-07-23). web-push-csharp, MIT. -->
+    <PackageReference Include="WebPush" Version="1.0.12" />
   </ItemGroup>
 
   <PropertyGroup>
