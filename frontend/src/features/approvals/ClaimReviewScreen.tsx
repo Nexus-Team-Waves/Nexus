@@ -37,6 +37,10 @@ export default function ClaimReviewScreen({
   const actions: DecisionAction[] =
     role === 'LineManager' ? ['approve', 'reject'] : ['approve', 'reduce', 'reject']
 
+  // The Top-Level Approver ADJUSTS rather than reduces: any amount up to the ORIGINAL claim,
+  // including increasing back above an earlier reduction (decision 2026-07-23).
+  const isTopLevel = role === 'TopLevel'
+
   // Only pending lines get a decision; locked lines were decided in an earlier round.
   const pendingLines = claim.lines.filter((l) => l.status === 'Pending')
 
@@ -63,11 +67,29 @@ export default function ClaimReviewScreen({
       const comment = c.comment.trim() || undefined
       if (c.action === 'reduce') {
         const amount = Number.parseFloat(c.amount)
-        if (!Number.isFinite(amount) || amount <= 0 || amount >= line.currentAmount) {
-          setError(`${shortCategory(line.category)}: a reduced amount must be between 0 and ${formatRs(line.currentAmount)}.`)
+        // ED may adjust up to the original claim (inclusive); other stages strictly below the
+        // carried amount — mirrors the server's rule.
+        const invalid = isTopLevel
+          ? !Number.isFinite(amount) || amount <= 0 || amount > line.claimedAmount
+          : !Number.isFinite(amount) || amount <= 0 || amount >= line.currentAmount
+        if (invalid) {
+          setError(isTopLevel
+            ? `${shortCategory(line.category)}: the adjusted amount must be between 0 and the claimed ${formatRs(line.claimedAmount)}.`
+            : `${shortCategory(line.category)}: a reduced amount must be between 0 and ${formatRs(line.currentAmount)}.`)
           return
         }
-        decisions.push({ lineId: line.lineId, action: 'reduce', amount, comment })
+        // Changing an amount always needs a stated reason (server enforces this too).
+        if (!comment) {
+          setError(`${shortCategory(line.category)}: a comment is required when changing the amount.`)
+          return
+        }
+        // Adjusting to exactly the carried amount is just an approval — send it as one so the
+        // audit trail reads naturally.
+        if (isTopLevel && amount === line.currentAmount) {
+          decisions.push({ lineId: line.lineId, action: 'approve', comment })
+        } else {
+          decisions.push({ lineId: line.lineId, action: 'reduce', amount, comment })
+        }
       } else if (c.action === 'reject') {
         if (!c.reason.trim()) { setError(`${shortCategory(line.category)}: a rejection needs a reason.`); return }
         decisions.push({ lineId: line.lineId, action: 'reject', reason: c.reason.trim(), comment })
@@ -182,17 +204,25 @@ export default function ClaimReviewScreen({
                         className={`seg-btn ${c.action === a ? 'seg-btn--on seg-btn--' + a : ''}`}
                         onClick={() => setChoice(line.lineId, { action: a })}
                       >
-                        {a === 'approve' ? 'Approve' : a === 'reduce' ? 'Reduce' : 'Reject'}
+                        {a === 'approve' ? 'Approve' : a === 'reduce' ? (isTopLevel ? 'Adjust' : 'Reduce') : 'Reject'}
                       </button>
                     ))}
                   </div>
 
                   {c.action === 'reduce' && (
-                    <input
-                      className="review-input" type="number" min="0" step="0.01" inputMode="decimal"
-                      value={c.amount} onChange={(e) => setChoice(line.lineId, { amount: e.target.value })}
-                      aria-label="Reduced amount"
-                    />
+                    <>
+                      <input
+                        className="review-input" type="number" min="0" step="0.01" inputMode="decimal"
+                        value={c.amount} onChange={(e) => setChoice(line.lineId, { amount: e.target.value })}
+                        aria-label={isTopLevel ? 'Adjusted amount' : 'Reduced amount'}
+                      />
+                      {isTopLevel && (
+                        <p className="claim-card-meta">
+                          Any amount up to the claimed {formatRs(line.claimedAmount)} — you may also
+                          restore an earlier reduction.
+                        </p>
+                      )}
+                    </>
                   )}
                   {c.action === 'reject' && (
                     <input
@@ -203,7 +233,10 @@ export default function ClaimReviewScreen({
                   )}
                   <input
                     className="review-input" type="text" maxLength={500}
-                    placeholder="Comment (optional — visible to the employee and later stages)"
+                    required={c.action === 'reduce'}
+                    placeholder={c.action === 'reduce'
+                      ? 'Comment (required when changing the amount)'
+                      : 'Comment (optional — visible to the employee and later stages)'}
                     value={c.comment} onChange={(e) => setChoice(line.lineId, { comment: e.target.value })}
                     aria-label="Line comment"
                   />
@@ -251,31 +284,31 @@ export default function ClaimReviewScreen({
 }
 
 /**
- * One line's receipt controls for approvers: toggle the image preview and download the
- * per-line PDF. The image is fetched as a Blob because a plain <img src="/api/..."> cannot
- * carry the Authorization header the API requires.
+ * One line's receipt controls for approvers: toggle previews of ALL the line's images and
+ * download the per-line PDF (one PDF with every image). Images are fetched as Blobs because a
+ * plain <img src="/api/..."> cannot carry the Authorization header the API requires.
  */
 function ReceiptRow({ claimId, line, itemNumber }: { claimId: string; line: ClaimLineDto; itemNumber: number }) {
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [imageUrls, setImageUrls] = useState<string[] | null>(null)
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
 
-  // Object URLs hold browser memory until revoked; release the old one whenever it is
+  // Object URLs hold browser memory until revoked; release the old ones whenever they are
   // replaced or the component unmounts.
   useEffect(() => {
-    return () => { if (imageUrl) URL.revokeObjectURL(imageUrl) }
-  }, [imageUrl])
+    return () => { if (imageUrls) for (const url of imageUrls) URL.revokeObjectURL(url) }
+  }, [imageUrls])
 
-  async function toggleImage() {
-    if (imageUrl) { setImageUrl(null); return } // hide (cleanup above revokes the URL)
-    if (!line.receiptId) return
+  async function toggleImages() {
+    if (imageUrls) { setImageUrls(null); return } // hide (cleanup above revokes the URLs)
+    if (line.receiptIds.length === 0) return
     setBusy(true)
     setNote(null)
     try {
-      const blob = await getReceiptImage(line.receiptId)
-      setImageUrl(URL.createObjectURL(blob))
+      const blobs = await Promise.all(line.receiptIds.map((id) => getReceiptImage(id)))
+      setImageUrls(blobs.map((b) => URL.createObjectURL(b)))
     } catch (e) {
-      setNote(e instanceof ApiError ? e.message : 'Could not load the receipt image.')
+      setNote(e instanceof ApiError ? e.message : 'Could not load the receipt images.')
     } finally {
       setBusy(false)
     }
@@ -305,9 +338,11 @@ function ReceiptRow({ claimId, line, itemNumber }: { claimId: string; line: Clai
   return (
     <div className="receipt-row">
       <div className="receipt-actions">
-        {line.receiptId ? (
-          <button type="button" className="btn btn--link" onClick={toggleImage} disabled={busy}>
-            {imageUrl ? 'Hide receipt' : 'View receipt'}
+        {line.receiptIds.length > 0 ? (
+          <button type="button" className="btn btn--link" onClick={toggleImages} disabled={busy}>
+            {imageUrls
+              ? 'Hide receipts'
+              : `View receipts (${line.receiptIds.length})`}
           </button>
         ) : (
           <span className="claim-card-meta">Receipt image not stored (legacy claim)</span>
@@ -317,7 +352,10 @@ function ReceiptRow({ claimId, line, itemNumber }: { claimId: string; line: Clai
         </button>
       </div>
       {note && <p className="claim-card-meta" role="alert">{note}</p>}
-      {imageUrl && <img className="receipt-preview" src={imageUrl} alt={`Receipt for item ${itemNumber}`} />}
+      {imageUrls?.map((url, i) => (
+        // eslint-disable-next-line react/no-array-index-key -- stable order per fetch
+        <img key={i} className="receipt-preview" src={url} alt={`Receipt ${i + 1} of item ${itemNumber}`} />
+      ))}
     </div>
   )
 }

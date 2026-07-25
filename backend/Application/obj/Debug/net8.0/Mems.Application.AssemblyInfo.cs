@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Mems.Application")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d97a16718559312f7255e971c9ad80f18b811be4")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ed2423b852f1a67b62e902f44bce811324787742")]
 [assembly: System.Reflection.AssemblyProductAttribute("Mems.Application")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Mems.Application")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

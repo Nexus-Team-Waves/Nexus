@@ -103,7 +103,13 @@ function EmployeeApp({ onSignOut }: { onSignOut: () => void }) {
           />
         )}
         {screen === 'submit' && (
-          <SubmitScreen dependants={entitlement.dependants} editing={editing} onDone={afterSubmit} />
+          <SubmitScreen
+            dependants={entitlement.dependants}
+            claims={claims}
+            editing={editing}
+            remaining={entitlement.remaining}
+            onDone={afterSubmit}
+          />
         )}
         {screen === 'claims' && (
           <ClaimsScreen claims={claims} onEdit={(c) => { setEditing(c); setScreen('submit') }} />

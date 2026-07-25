@@ -97,13 +97,19 @@ A claim is a header with one or more line items:
   - **Claimed amount** and **approved amount** (null until a stage acts on this line).
   - **Line status:** Pending → Approved / Partially approved / Rejected.
   - **Rejection reason:** required text when a line is rejected.
-  - **Receipt attachment:** photo (device camera) or uploaded file. **Required on every
-    line** — a claim cannot be submitted (or edited to a state) without one per line;
-    enforced client-side and in `SubmitClaimRequestValidator`. The image bytes (JPEG/PNG,
-    ≤ 5 MB) are uploaded to the server and stored; the claim line carries the stored
-    receipt's id. Visible to the owner and every approver; approvers can export each line
-    as a PDF. Claims submitted before image upload existed hold only a filename and degrade
-    gracefully (details-only PDF, "no stored image" note).
+  - **Receipt attachments:** photos (device camera) or uploaded files — **1 to 5 images per
+    line, at least one required** (decision 2026-07-23); enforced client-side and in
+    `SubmitClaimRequestValidator`. Image bytes (JPEG/PNG, ≤ 5 MB each) are uploaded and
+    stored; the claim line carries the stored receipt ids. Visible to the owner and every
+    approver; approvers can export each line as a PDF (first image with the details, one
+    page per additional image). Claims predating image upload degrade gracefully
+    (details-only PDF, "no stored image" note).
+  - **Bill date (2026-07-23):** the employee must enter the DATE OF THE BILL per item —
+    distinct from the submission date; cannot be in the future (client) or after the
+    submission date (server).
+  - **Duplicate-bill warning (2026-07-23):** if an item's bill date + amount + category
+    match a line on any of the employee's other claims, the app warns and asks "submit
+    anyway?" — a confirmation, never a block (two identical bills can be legitimate).
   - **Days-elapsed indicator:** show days between expense date and submission date (see
     Claim submission timing below) — informational, not a validation gate.
 - **Claim-level totals:** `Total claimed` = sum of claimed amounts. `Total approved` = sum of
@@ -153,6 +159,16 @@ A claim is a header with one or more line items:
 - **Stage capability — Line Manager cannot reduce (decision 2026-07-23):** the Line Manager
   (HOD) stage approves in full or rejects with a reason only. Reduction is available from
   Admin/HR onward. Enforced server-side; the Reduce option is hidden in the Line Manager UI.
+- **Reducing requires a comment (2026-07-23):** any amount change (reduce, or a Top-Level
+  adjustment) must carry a comment — enforced server-side and in the UI.
+- **Top-Level can adjust up to the claim (2026-07-23):** the Top-Level Approver may set a
+  line's amount to anything from just above zero up to the ORIGINALLY CLAIMED amount —
+  including restoring an amount an earlier stage reduced. An adjustment back to the full
+  claim reads as Approved; anything below reads as Reduced.
+- **Top-Level decisions are final (2026-07-23):** a claim never returns to the employee from
+  the Top-Level stage. Rejected items are closed permanently (no resubmit); approved items
+  complete normally and Finance posts them. If every item is rejected the claim moves to a
+  terminal **Closed** stage — not editable, never postable.
 - **Receipts visible to every approver:** each line's receipt image can be viewed inline and
   downloaded as a **per-line PDF** (line details + image) at every approval stage.
 - **Per-line audit trail & comments (2026-07-23):** every submit/resubmit and every per-line

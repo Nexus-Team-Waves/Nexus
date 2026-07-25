@@ -52,6 +52,22 @@ export default function HomeScreen({
         </p>
       </section>
 
+      {/* At-a-glance figures behind the hero number. */}
+      <div className="stat-row">
+        <div className="stat">
+          <span className="stat-label">Used</span>
+          <span className="stat-value">{formatRs(entitlement.consumed)}</span>
+        </div>
+        <div className="stat">
+          <span className="stat-label">Annual cap</span>
+          <span className="stat-value">{formatRs(entitlement.cap)}</span>
+        </div>
+        <div className="stat">
+          <span className="stat-label">Utilised</span>
+          <span className="stat-value">{usedPct}%</span>
+        </div>
+      </div>
+
       <div className="action-row">
         <button type="button" className="btn btn--primary" onClick={() => onNavigate('submit')}>
           <PlusIcon size={18} /> Submit a claim

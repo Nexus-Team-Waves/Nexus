@@ -1,11 +1,13 @@
 import { HomeIcon, PlusIcon, ListIcon } from './icons'
+import BrandMark from './BrandMark'
 
 /** The three primary destinations. Kept as a union so routing stays type-safe. */
 export type Screen = 'home' | 'submit' | 'claims'
 
 /**
- * Persistent bottom navigation (thumb-reachable on a phone). The active item is highlighted in
- * brand colour; each item is a full tap target with an icon above its label.
+ * Persistent bottom navigation (thumb-reachable on a phone). On desktop (≥900px) CSS
+ * re-lays this same element out as a branded left sidebar — the BrandMark below is hidden
+ * on mobile (`.nav-brand { display: none }`) and shown only in the sidebar.
  */
 export default function BottomNav({
   active,
@@ -16,6 +18,9 @@ export default function BottomNav({
 }) {
   return (
     <nav className="bottom-nav" aria-label="Primary">
+      <div className="nav-brand">
+        <BrandMark />
+      </div>
       <NavItem label="Home" active={active === 'home'} onClick={() => onNavigate('home')}>
         <HomeIcon />
       </NavItem>

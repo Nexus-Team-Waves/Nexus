@@ -1,43 +1,61 @@
 /* MEMS design tokens + base.
-   Mobile-first, blue theme — matches the approved product mockups. Frontline staff are on
-   phones, so the app is a single centred column (a "phone frame" on wider screens). */
+   Mobile-first, blue theme. Frontline staff are on phones (single centred column); on
+   desktop the same build becomes a sidebar layout (see App.css ≥900px). */
 
 :root {
-  /* Brand */
-  --brand: #1e40af;         /* primary actions */
-  --brand-strong: #1b3a9c;  /* hover/active */
-  --brand-ink: #ffffff;     /* text on brand */
-  --brand-soft: #e8effe;    /* logo tile, progress track, subtle fills */
+  /* Brand ramp — one hue, several strengths. The gradient pair is what the hero
+     (balance) card and primary buttons are built from. */
+  --brand: #2547d0;          /* primary actions */
+  --brand-strong: #1d3ab8;   /* hover/active */
+  --brand-deep: #16247e;     /* gradient end, sidebar active text */
+  --brand-ink: #ffffff;      /* text on brand */
+  --brand-soft: #e9edfd;     /* logo tile, subtle fills, active nav pill */
+  --brand-softer: #f4f6fe;   /* hover tints */
+  --brand-grad: linear-gradient(135deg, #2f56e0 0%, #1d3ab8 55%, #182f9b 100%);
 
-  /* Ink & surfaces */
-  --ink: #0f172a;
-  --ink-2: #334155;
-  --muted: #64748b;
-  --page: #eef1f5;          /* area behind the app column */
-  --bg: #ffffff;            /* app column background */
-  --surface: #f8fafc;       /* inset cards (e.g. balance) */
+  /* Ink & surfaces (slate ramp) */
+  --ink: #0b1324;
+  --ink-2: #3b475c;
+  --muted: #67748b;
+  --faint: #9aa5b8;
+  --page: #dfe4ec;           /* area behind the app column */
+  --bg: #ffffff;             /* app column background */
+  --surface: #f6f8fb;        /* inset panels, hovers */
   --card: #ffffff;
-  --border: #e6e8ec;
-  --border-strong: #d5d9e0;
+  --border: #e6eaf1;
+  --border-strong: #cfd6e1;
 
-  /* Status */
-  --ok-bg: #dcfce7;   --ok-ink: #166534;
-  --review-bg: #fef3c7; --review-ink: #92400e;
-  --danger-bg: #fee2e2; --danger-ink: #991b1b;
-  --info-bg: #e0edff; --info-ink: #1e40af;
+  /* Status — tinted fills with legible inks */
+  --ok-bg: #e3f6ea;    --ok-ink: #156d3d;   --ok-solid: #16a34a;
+  --review-bg: #fdf1d7; --review-ink: #8a5a0a; --review-solid: #d97706;
+  --danger-bg: #fde7e7; --danger-ink: #a02121; --danger-solid: #dc2626;
+  --info-bg: #e7efff;  --info-ink: #2547d0;
 
-  /* Shape */
+  /* Shape & elevation */
+  --radius-lg: 20px;
   --radius: 14px;
   --radius-sm: 10px;
   --radius-pill: 999px;
-  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-card: 0 1px 2px rgba(11, 19, 36, 0.05), 0 4px 14px rgba(11, 19, 36, 0.05);
+  --shadow-raised: 0 2px 6px rgba(11, 19, 36, 0.07), 0 12px 28px rgba(11, 19, 36, 0.09);
+  --shadow-pop: 0 8px 20px rgba(11, 19, 36, 0.14), 0 20px 48px rgba(11, 19, 36, 0.16);
+  --ring: 0 0 0 3px rgba(47, 86, 224, 0.22);
 
-  --sans: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+
+  /* Sidebar (enterprise dashboard) — deep navy, used on desktop and for dark accents. */
+  --side-bg: linear-gradient(180deg, #0e1734 0%, #101c44 60%, #0d1530 100%);
+  --side-ink: rgba(255, 255, 255, 0.66);
+  --side-ink-strong: #ffffff;
+  --side-active: rgba(255, 255, 255, 0.1);
+  --side-accent: #7c96ff;
+
+  --sans: 'Inter Variable', system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
 
   font-family: var(--sans);
   font-size: 16px;
-  line-height: 1.45;
+  line-height: 1.5;
   color: var(--ink);
   color-scheme: light;
   text-rendering: optimizeLegibility;
@@ -52,14 +70,16 @@
 body {
   margin: 0;
   min-height: 100svh;
-  background: var(--page);
+  /* A soft vertical wash instead of flat gray — gives the phone column a stage. */
+  background: linear-gradient(180deg, #e8ecf3 0%, var(--page) 45%, #d8deea 100%);
+  background-attachment: fixed;
 }
 
 h1, h2, h3 {
   margin: 0;
   color: var(--ink);
   font-weight: 700;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
 }
 
 p {
@@ -68,6 +88,11 @@ p {
 
 button {
   font-family: inherit;
+}
+
+/* Amounts line up when digits share a width. Applied via class where money is shown. */
+.tnum {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Respect users who ask for reduced motion. */

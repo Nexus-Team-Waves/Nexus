@@ -62,7 +62,17 @@ Line Manager → Admin/HR → Finance ─┬─(approved total ≤ Rs 25,000)→
   (approved items show locked); approvers then decide only the resubmitted items.
 - **Per-line timeline & comments**: every line shows "Changes & comments" — who approved,
   reduced (with amounts), or rejected (with reason) at each stage, plus optional notes from the
-  employee and approvers.
+  employee and approvers. Reducing/adjusting an amount REQUIRES a comment.
+- **Multi-image receipts**: each item takes 1–5 receipt images (chips with remove ×); the
+  per-line PDF carries all of them (extra images on their own pages).
+- **Bill date + duplicate warning**: the form asks for the bill's own date; submitting an item
+  whose date+amount+category match an existing claim pops a "submit anyway?" confirmation.
+- **ED (Top-Level) is final**: ED can ADJUST any amount up to the original claim (even undoing
+  an earlier reduction), and ED rejections never return to the employee — rejected items are
+  closed for good (all-rejected → claim shows "Closed — rejected (final)"); approved items
+  still go to Finance for posting.
+- **Desktop layout**: at ≥900px the employee app gets a left sidebar nav and card grids; below
+  900px the phone layout is unchanged. Same build serves both.
 - **Notifications**: approvers get Web Push (works with the browser closed — see the demo step
   below); everyone gets the in-app bell + toasts (30-second poll).
 - **Receipts.** Every claim line carries an uploaded receipt image (JPEG/PNG ≤ 5 MB). Each

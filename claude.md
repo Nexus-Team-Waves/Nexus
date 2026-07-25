@@ -83,6 +83,7 @@ dotnet restore backend/Mems.sln
 dotnet build   backend/Mems.sln
 dotnet test    backend/Mems.sln
 dotnet run --project backend/Api --launch-profile https   # https://localhost:7112
+dotnet run --project backend/Api --launch-profile lan     # binds 0.0.0.0 — reachable on the LAN, e.g. http://<machine-ip>:5046 (needs inbound firewall rules for 5046/7112 once, as admin)
 
 # Swagger UI:   https://localhost:7112/swagger
 # Health check: https://localhost:7112/api/health

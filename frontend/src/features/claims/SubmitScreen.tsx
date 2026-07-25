@@ -74,12 +74,15 @@ export default function SubmitScreen({
   dependants,
   claims,
   editing,
+  remaining,
   onDone,
 }: {
   dependants: DependantDto[]
   /** The employee's existing claims — used to warn about a possibly duplicated bill. */
   claims: ClaimDto[]
   editing: ClaimDto | null
+  /** Remaining entitlement this year, shown in the summary panel. */
+  remaining?: number
   onDone: () => void
 }) {
   const [items, setItems] = useState<DraftItem[]>(() => (editing ? itemsFromClaim(editing) : [blankItem()]))
@@ -142,6 +145,32 @@ export default function SubmitScreen({
     return `Item ${index + 1}: choose a valid person.`
   }
 
+  /**
+   * Duplicate-bill guard (decision 2026-07-23): a bill with the same date + amount + category
+   * as a line on any OTHER claim of this employee is probably being entered twice. Warn and
+   * let the user decide — never block (two identical bills can be legitimate).
+   */
+  function duplicateWarnings(): string[] {
+    const warnings: string[] = []
+    items.forEach((item, index) => {
+      if (item.locked) return
+      const amount = Number.parseFloat(item.amount)
+      for (const claim of claims) {
+        if (claim.id === editing?.id) continue // don't match a claim against itself while editing
+        for (const line of claim.lines) {
+          if (line.expenseDate === item.expenseDate
+            && line.claimedAmount === amount
+            && line.category === item.category) {
+            warnings.push(
+              `Item ${index + 1}: a ${item.category} bill dated ${item.expenseDate} for ${formatRs(amount)} `
+              + `already exists on your claim submitted ${claim.submissionDate}.`)
+          }
+        }
+      }
+    })
+    return warnings
+  }
+
   async function submit() {
     setError(null)
     const lines: SubmitClaimLine[] = []
@@ -149,6 +178,12 @@ export default function SubmitScreen({
       const result = toLine(items[i]!, i)
       if (typeof result === 'string') { setError(result); return }
       lines.push(result)
+    }
+
+    const duplicates = duplicateWarnings()
+    if (duplicates.length > 0
+      && !window.confirm(`Possible duplicate bill(s):\n\n${duplicates.join('\n')}\n\nSubmit anyway?`)) {
+      return
     }
 
     // employeeId is set from the auth token server-side; the value here is a placeholder.
@@ -171,6 +206,8 @@ export default function SubmitScreen({
     }
   }
 
+  const editableCount = items.filter((it) => !it.locked).length
+
   return (
     <div className="screen-pad">
       <h1 className="screen-title">{editing ? 'Edit claim' : 'Submit a claim'}</h1>
@@ -181,40 +218,72 @@ export default function SubmitScreen({
         </p>
       )}
 
-      <div className="items">
-        {items.map((item, index) => (
-          <ItemCard
-            key={item.key}
-            item={item}
-            dependants={dependants}
-            canRemove={items.length > 1 && !returnedEdit}
-            index={index}
-            onChange={(next) => patch(item.key, next)}
-            onUploadError={(message) => setError(message)}
-            onRemove={() => removeItem(item.key)}
-          />
-        ))}
+      {/* Two panes on desktop (items | sticky summary); one column on mobile. */}
+      <div className="submit-layout">
+        <div className="submit-main">
+          <div className="items">
+            {items.map((item, index) => (
+              <ItemCard
+                key={item.key}
+                item={item}
+                dependants={dependants}
+                canRemove={items.length > 1 && !returnedEdit}
+                index={index}
+                onChange={(next) => patch(item.key, next)}
+                onUploadError={(message) => setError(message)}
+                onRemove={() => removeItem(item.key)}
+              />
+            ))}
+          </div>
+
+          {!returnedEdit && (
+            <button type="button" className="btn btn--outline btn--block add-item" onClick={addItem}>
+              <PlusIcon size={18} /> Add another item
+            </button>
+          )}
+        </div>
+
+        <aside className="submit-side">
+          <div className="summary-card">
+            <h2 className="summary-title">Summary</h2>
+            <dl className="summary-rows">
+              <div className="summary-row">
+                <dt>Items</dt>
+                <dd>{items.length}{returnedEdit ? ` (${editableCount} editable)` : ''}</dd>
+              </div>
+              <div className="summary-row">
+                <dt>Total claimed</dt>
+                <dd className="summary-total">{formatRs(total)}</dd>
+              </div>
+              {remaining != null && (
+                <div className="summary-row">
+                  <dt>Entitlement left</dt>
+                  <dd>{formatRs(remaining)}</dd>
+                </div>
+              )}
+            </dl>
+
+            {remaining != null && total > remaining && (
+              <p className="banner banner--info summary-note">
+                This claim exceeds your remaining entitlement — the excess may be treated as an
+                advance or reduced during approval.
+              </p>
+            )}
+
+            <button type="button" className="btn btn--primary btn--block" onClick={submit} disabled={busy || anyUploading}>
+              {busy ? 'Saving…' : anyUploading ? 'Uploading receipt…' : editing ? 'Save changes' : 'Submit claim'}
+            </button>
+            {editing && (
+              <button type="button" className="btn btn--link btn--block" onClick={onDone}>
+                Cancel
+              </button>
+            )}
+            <p className="summary-hint">
+              Each item needs its bill date and 1–{MAX_IMAGES_PER_ITEM} receipt images.
+            </p>
+          </div>
+        </aside>
       </div>
-
-      {!returnedEdit && (
-        <button type="button" className="btn btn--outline btn--block add-item" onClick={addItem}>
-          <PlusIcon size={18} /> Add another item
-        </button>
-      )}
-
-      <div className="total-row">
-        <span>Total claimed</span>
-        <strong>{formatRs(total)}</strong>
-      </div>
-
-      <button type="button" className="btn btn--primary btn--block" onClick={submit} disabled={busy || anyUploading}>
-        {busy ? 'Saving…' : anyUploading ? 'Uploading receipt…' : editing ? 'Save changes' : 'Submit claim'}
-      </button>
-      {editing && (
-        <button type="button" className="btn btn--link btn--block" onClick={onDone}>
-          Cancel
-        </button>
-      )}
     </div>
   )
 }
@@ -224,7 +293,7 @@ function ItemCard(props: {
   dependants: DependantDto[]
   canRemove: boolean
   index: number
-  onChange: (next: Partial<DraftItem>) => void
+  onChange: (next: Partial<DraftItem> | ((it: DraftItem) => Partial<DraftItem>)) => void
   onUploadError: (message: string) => void
   onRemove: () => void
 }) {
@@ -244,37 +313,49 @@ function ItemCard(props: {
           <span className="receipt-name">Approved — locked</span>
         </div>
         <p className="claim-card-meta">
-          {label} · {item.category} · claimed {formatRs(Number.parseFloat(item.amount) || 0)}
+          {label} · {item.category} · {item.expenseDate} · claimed {formatRs(Number.parseFloat(item.amount) || 0)}
           {item.decidedAmount != null ? ` · approved ${formatRs(item.decidedAmount)}` : ''}
+          {item.receipts.length > 0 ? ` · ${item.receipts.length} receipt image(s)` : ''}
         </p>
       </fieldset>
     )
   }
 
   /**
-   * Upload the chosen image right away (not at submit time): the server stores the bytes and
-   * returns a receiptId, which is what the claim line actually carries. Requires connectivity —
-   * like submit itself today. (A future offline sync engine must also queue the image blob.)
+   * Upload the chosen images right away (not at submit time): the server stores the bytes and
+   * returns receipt ids, which are what the claim line actually carries. Uploads run one after
+   * another; each completion appends via the updater form of onChange so no result is lost.
+   * Requires connectivity — like submit itself today.
    */
-  async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    e.target.value = '' // reset so picking the same file again re-triggers this handler
-    if (!file) return
+  async function handleFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? [])
+    e.target.value = '' // reset so picking the same files again re-triggers this handler
+    if (files.length === 0) return
 
-    if (file.size > MAX_RECEIPT_BYTES) {
-      onUploadError(`Item ${index + 1}: the receipt image must be 5 MB or smaller.`)
+    const room = MAX_IMAGES_PER_ITEM - item.receipts.length - item.uploadingCount
+    if (files.length > room) {
+      onUploadError(`Item ${index + 1}: at most ${MAX_IMAGES_PER_ITEM} receipt images per item (${room > 0 ? `${room} more allowed` : 'limit reached'}).`)
+      return
+    }
+    if (files.some((f) => f.size > MAX_RECEIPT_BYTES)) {
+      onUploadError(`Item ${index + 1}: each receipt image must be 5 MB or smaller.`)
       return
     }
 
-    onChange({ receipt: file.name, receiptId: '', uploading: true })
-    try {
-      const result = await uploadReceipt(file)
-      onChange({ receipt: result.fileName, receiptId: result.receiptId, uploading: false })
-    } catch (err) {
-      onChange({ receipt: '', receiptId: '', uploading: false })
-      onUploadError(err instanceof ApiError
-        ? `Item ${index + 1}: ${err.message}`
-        : `Item ${index + 1}: could not upload the receipt. Check your connection and try again.`)
+    onChange((it) => ({ uploadingCount: it.uploadingCount + files.length }))
+    for (const file of files) {
+      try {
+        const result = await uploadReceipt(file)
+        onChange((it) => ({
+          receipts: [...it.receipts, { id: result.receiptId, name: result.fileName }],
+          uploadingCount: it.uploadingCount - 1,
+        }))
+      } catch (err) {
+        onChange((it) => ({ uploadingCount: it.uploadingCount - 1 }))
+        onUploadError(err instanceof ApiError
+          ? `Item ${index + 1}: ${err.message}`
+          : `Item ${index + 1}: could not upload a receipt. Check your connection and try again.`)
+      }
     }
   }
 
@@ -293,36 +374,51 @@ function ItemCard(props: {
         </p>
       )}
 
-      <label className="field">
-        <span>For</span>
-        <select value={item.beneficiary} onChange={(e) => onChange({ beneficiary: e.target.value })}>
-          <option value="Self">Self</option>
-          {dependants.map((d) => (
-            <option key={d.id} value={d.id}>{d.label}</option>
-          ))}
-        </select>
-      </label>
+      {/* Field pairs sit side-by-side when the card is wide enough (desktop). */}
+      <div className="field-row">
+        <label className="field">
+          <span>For</span>
+          <select value={item.beneficiary} onChange={(e) => onChange({ beneficiary: e.target.value })}>
+            <option value="Self">Self</option>
+            {dependants.map((d) => (
+              <option key={d.id} value={d.id}>{d.label}</option>
+            ))}
+          </select>
+        </label>
 
-      <label className="field">
-        <span>Category</span>
-        <select value={item.category} onChange={(e) => onChange({ category: e.target.value })}>
-          {CLAIM_CATEGORIES.map((c) => (
-            <option key={c.value} value={c.value}>{c.label}</option>
-          ))}
-        </select>
-      </label>
+        <label className="field">
+          <span>Category</span>
+          <select value={item.category} onChange={(e) => onChange({ category: e.target.value })}>
+            {CLAIM_CATEGORIES.map((c) => (
+              <option key={c.value} value={c.value}>{c.label}</option>
+            ))}
+          </select>
+        </label>
+      </div>
 
-      <label className="field">
-        <span>Claimed amount (PKR)</span>
-        <input
-          type="number" min="0" step="0.01" inputMode="decimal" placeholder="0"
-          value={item.amount}
-          onChange={(e) => onChange({ amount: e.target.value })}
-        />
-      </label>
+      <div className="field-row">
+        <label className="field">
+          <span>Claimed amount (PKR)</span>
+          <input
+            type="number" min="0" step="0.01" inputMode="decimal" placeholder="0"
+            value={item.amount}
+            onChange={(e) => onChange({ amount: e.target.value })}
+          />
+        </label>
+
+        <label className="field">
+          {/* The BILL's date — distinct from the claim's submission date. */}
+          <span>Date of bill (required)</span>
+          <input
+            type="date" required max={today()}
+            value={item.expenseDate}
+            onChange={(e) => onChange({ expenseDate: e.target.value })}
+          />
+        </label>
+      </div>
 
       <div className="field">
-        <span>Receipt (required)</span>
+        <span>Receipts (1–{MAX_IMAGES_PER_ITEM} images, required)</span>
         <div className="receipt-btns">
           <button type="button" className="btn btn--outline" onClick={() => fileInput.current?.click()}>
             <CameraIcon size={18} /> Take photo
@@ -332,14 +428,27 @@ function ItemCard(props: {
           </button>
           <input
             // JPEG/PNG only: they are what the server-side PDF renderer (PdfSharp) can embed.
-            ref={fileInput} type="file" accept="image/jpeg,image/png" hidden
-            onChange={handleFileSelected}
+            ref={fileInput} type="file" accept="image/jpeg,image/png" multiple hidden
+            onChange={handleFilesSelected}
           />
         </div>
-        {item.uploading && <p className="receipt-name">Uploading {item.receipt}…</p>}
-        {!item.uploading && item.receiptId && <p className="receipt-name">Attached: {item.receipt}</p>}
-        {!item.uploading && !item.receiptId && item.receipt && (
-          <p className="receipt-name">Re-attach: {item.receipt}</p>
+        {item.receipts.length > 0 && (
+          <div className="receipt-chips">
+            {item.receipts.map((r) => (
+              <span key={r.id} className="receipt-chip">
+                {r.name}
+                <button
+                  type="button" className="receipt-chip-remove" aria-label={`Remove ${r.name}`}
+                  onClick={() => onChange((it) => ({ receipts: it.receipts.filter((x) => x.id !== r.id) }))}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        {item.uploadingCount > 0 && (
+          <p className="receipt-name">Uploading {item.uploadingCount} image(s)…</p>
         )}
       </div>
 
